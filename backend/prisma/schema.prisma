@@ -1,0 +1,16 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Ayam {
+  id        Int      @id @default(autoincrement())
+  jumlah    Int
+  mati      Int
+  pakan     Float
+  createdAt DateTime @default(now())
+}

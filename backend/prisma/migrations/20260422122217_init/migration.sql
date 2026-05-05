@@ -1,0 +1,10 @@
+-- CreateTable
+CREATE TABLE "Ayam" (
+    "id" SERIAL NOT NULL,
+    "jumlah" INTEGER NOT NULL,
+    "mati" INTEGER NOT NULL,
+    "pakan" DOUBLE PRECISION NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Ayam_pkey" PRIMARY KEY ("id")
+);
