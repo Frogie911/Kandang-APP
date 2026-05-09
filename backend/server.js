@@ -15,7 +15,8 @@ app.get("/ayam", async (req, res) => {
     const data = await prisma.ayam.findMany();
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: "Gagal ambil data" });
+    console.error("PRISMA ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
