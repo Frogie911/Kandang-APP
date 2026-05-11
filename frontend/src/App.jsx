@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-
+const API_URL = "https://kandang-app-production.up.railway.app";
 function App() {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/ayam")
+    fetch(`${API_URL}/ayam`)
       .then((res) => res.json())
       .then((data) => {
         console.log("DATA MASUK:", data); // 🔥 penting
