@@ -67,6 +67,11 @@ app.put("/ayam/:id", async (req, res) => {
   }
 });
 
+import authRouter from "./auth.js";
+
+// tambahkan setelah app.use(express.json())
+app.use("/auth", authRouter);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server jalan di port ${PORT}`);
