@@ -8,6 +8,14 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      String   @default("worker") // "admin" atau "worker"
+  createdAt DateTime @default(now())
+}
+
 model Ayam {
   id        Int      @id @default(autoincrement())
   jumlah    Int
