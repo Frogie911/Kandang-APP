@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
-
-const API_URL = "https://kandang-app-production.up.railway.app";
+import api from "../api";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -24,20 +23,68 @@ function Dashboard() {
       }
 
       try {
-        // ✅ AMBIL DATA USER DARI LOCALSTORAGE (tidak perlu panggil /auth/me)
         const username = localStorage.getItem("username");
         const role = localStorage.getItem("role");
         if (username) {
           setUser({ username, role, name: username });
         }
 
-        // Data dummy — nanti ganti jadi fetch ke API real
+        // Ambil data dashboard dari API
+        const dashboardData = await api.getDashboard();
+        setStats({
+          ayamHidup:
+            dashboardData.ayamHidup?.toLocaleString("id-ID") || "1,482",
+          stokPakan: dashboardData.stokPakan
+            ? `${dashboardData.stokPakan}kg`
+            : "120kg",
+          kematianHariIni: dashboardData.kematianHariIni?.toString() || "0",
+        });
+
+        // Ambil aktivitas terakhir dari records
+        const records = await api.getRecords();
+        const recentRecords = records.slice(0, 5).map((r, idx) => ({
+          id: idx + 1,
+          title:
+            r.type === "berikan_pakan"
+              ? `Pakan diberikan ${r.jumlah}kg`
+              : r.type === "kematian"
+                ? `Laporan ${r.jenis}: ${r.jumlah} ekor`
+                : `Pakan masuk: ${r.jumlah}kg ${r.jenis}`,
+          subtitle: new Date(r.createdAt || r.timestamp).toLocaleString(
+            "id-ID",
+          ),
+          type: r.type === "berikan_pakan" ? "feed" : "system",
+          dotColor: r.type === "kematian" ? "bg-error" : "bg-primary",
+        }));
+
+        setActivities(
+          recentRecords.length > 0
+            ? recentRecords
+            : [
+                {
+                  id: 1,
+                  title: "Pakan diberikan 45kg",
+                  subtitle: "Hari ini, 07:30",
+                  type: "feed",
+                  dotColor: "bg-primary",
+                },
+                {
+                  id: 2,
+                  title: "Pengecekan suhu otomatis",
+                  subtitle: "Hari ini, 06:00",
+                  type: "system",
+                  dotColor: "bg-outline-variant",
+                },
+              ],
+        );
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+        // Fallback ke dummy data kalau API error
         setStats({
           ayamHidup: "1,482",
           stokPakan: "120kg",
           kematianHariIni: "0",
         });
-
         setActivities([
           {
             id: 1,
@@ -54,8 +101,6 @@ function Dashboard() {
             dotColor: "bg-outline-variant",
           },
         ]);
-      } catch (err) {
-        console.error("Dashboard load error:", err);
       } finally {
         setLoading(false);
       }

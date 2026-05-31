@@ -1,37 +1,54 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
+import api from "../api";
 
 function Riwayat() {
   const navigate = useNavigate();
   const [records, setRecords] = useState([]);
   const [filterType, setFilterType] = useState("semua");
   const [filterDate, setFilterDate] = useState("hari_ini");
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState(null);
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("sipoultry_records") || "[]");
-    setRecords(data.reverse()); // Terbaru di atas
+    const fetchData = async () => {
+      try {
+        const data = await api.getRecords();
+        setRecords(data);
+      } catch (err) {
+        console.error("Gagal ambil riwayat:", err);
+        setMessage("Gagal ambil data dari server");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
   const filterRecords = () => {
     let filtered = [...records];
 
-    // Filter tipe
     if (filterType !== "semua") {
       filtered = filtered.filter((r) => r.type === filterType);
     }
 
-    // Filter tanggal
     const now = new Date();
     if (filterDate === "hari_ini") {
       const today = now.toISOString().split("T")[0];
-      filtered = filtered.filter((r) => r.timestamp?.startsWith(today));
+      filtered = filtered.filter(
+        (r) => r.createdAt?.startsWith(today) || r.timestamp?.startsWith(today),
+      );
     } else if (filterDate === "minggu_ini") {
       const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-      filtered = filtered.filter((r) => new Date(r.timestamp) >= weekAgo);
+      filtered = filtered.filter(
+        (r) => new Date(r.createdAt || r.timestamp) >= weekAgo,
+      );
     } else if (filterDate === "bulan_ini") {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      filtered = filtered.filter((r) => new Date(r.timestamp) >= monthStart);
+      filtered = filtered.filter(
+        (r) => new Date(r.createdAt || r.timestamp) >= monthStart,
+      );
     }
 
     return filtered;
@@ -72,6 +89,17 @@ function Riwayat() {
     });
   };
 
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="font-body-md text-body-md">Memuat data...</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       {/* Header */}
@@ -83,6 +111,13 @@ function Riwayat() {
           Lihat semua aktivitas kandang
         </p>
       </section>
+
+      {/* Error Message */}
+      {message && (
+        <div className="p-4 bg-error-container border border-error rounded-xl text-error font-body-md text-body-md">
+          {message}
+        </div>
+      )}
 
       {/* Filter Tipe */}
       <section className="flex gap-2 overflow-x-auto pb-2">
@@ -161,11 +196,10 @@ function Riwayat() {
                       {config.label}
                     </span>
                     <span className="font-label-md text-label-md text-outline">
-                      {formatDate(record.timestamp)}
+                      {formatDate(record.createdAt || record.timestamp)}
                     </span>
                   </div>
 
-                  {/* Detail per tipe */}
                   {record.type === "berikan_pakan" && (
                     <div className="mt-1 space-y-1">
                       <p className="font-body-md text-body-md text-on-surface">

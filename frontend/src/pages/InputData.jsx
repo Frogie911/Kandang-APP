@@ -4,12 +4,11 @@ import Layout from "../components/Layout";
 import BerikanPakanForm from "../components/input/BerikanPakanForm";
 import KematianForm from "../components/input/KematianForm";
 import PakanMasukForm from "../components/input/PakanMasukForm";
-
-const API_URL = "https://kandang-app-production.up.railway.app";
+import api from "../api";
 
 function InputData() {
   const navigate = useNavigate();
-  const [showModal, setShowModal] = useState(true); // langsung tampil saat masuk halaman
+  const [showModal, setShowModal] = useState(true);
   const [activeForm, setActiveForm] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -30,7 +29,7 @@ function InputData() {
     jenis: "",
     jumlah: 0,
     supplier: "",
-    waktu: new Date().toDateString("id-ID"),
+    tanggal: new Date().toISOString().split("T")[0],
     foto: null,
   });
 
@@ -52,7 +51,7 @@ function InputData() {
   const handleSubmit = async (e, type) => {
     e.preventDefault();
     setLoading(true);
-    const token = localStorage.getItem("token");
+
     const username = localStorage.getItem("username");
     let payload = {
       type,
@@ -92,31 +91,34 @@ function InputData() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/records`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        showToast("Data berhasil disimpan!", "success");
-      } else {
-        const existing = JSON.parse(
-          localStorage.getItem("sipoultry_records") || "[]",
-        );
-        existing.push(payload);
-        localStorage.setItem("sipoultry_records", JSON.stringify(existing));
-        showToast("Data tersimpan (mode lokal)", "success");
-      }
+      await api.createRecord(payload);
+      showToast("Data berhasil disimpan!", "success");
+
+      // Reset form
+      if (type === "berikan_pakan")
+        setPakanForm({
+          jenis: "starter",
+          jumlah: 45.0,
+          waktu: new Date().toLocaleString("id-ID"),
+        });
+      if (type === "kematian")
+        setKematianForm({
+          jenis: "mati",
+          jumlah: "",
+          keterangan: "",
+          foto: null,
+        });
+      if (type === "pakan_masuk")
+        setPakanMasukForm({
+          jenis: "",
+          jumlah: 0,
+          supplier: "",
+          tanggal: new Date().toISOString().split("T")[0],
+          foto: null,
+        });
     } catch (err) {
-      const existing = JSON.parse(
-        localStorage.getItem("sipoultry_records") || "[]",
-      );
-      existing.push(payload);
-      localStorage.setItem("sipoultry_records", JSON.stringify(existing));
-      showToast("Data tersimpan (mode offline)", "success");
+      console.error("Submit error:", err);
+      showToast("Gagal simpan: " + err.message, "error");
     } finally {
       setLoading(false);
     }

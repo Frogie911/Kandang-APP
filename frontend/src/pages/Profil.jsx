@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
+import api from "../api";
 
 function Profil() {
   const navigate = useNavigate();
@@ -8,29 +9,35 @@ function Profil() {
   const [stats, setStats] = useState({ today: 0, week: 0, total: 0 });
   const [darkMode, setDarkMode] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Ambil data user dari localStorage
-    const username = localStorage.getItem("username");
-    const role = localStorage.getItem("role");
-    setUser({ username, role, name: username });
+    const fetchData = async () => {
+      const username = localStorage.getItem("username");
+      const role = localStorage.getItem("role");
+      setUser({ username, role, name: username });
 
-    // Hitung statistik dari records
-    const records = JSON.parse(
-      localStorage.getItem("sipoultry_records") || "[]",
-    );
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      try {
+        const records = await api.getRecords();
+        const now = new Date();
+        const today = now.toISOString().split("T")[0];
+        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
-    const todayCount = records.filter((r) =>
-      r.timestamp?.startsWith(today),
-    ).length;
-    const weekCount = records.filter(
-      (r) => new Date(r.timestamp) >= weekAgo,
-    ).length;
+        const todayCount = records.filter((r) =>
+          (r.createdAt || r.timestamp)?.startsWith(today),
+        ).length;
+        const weekCount = records.filter(
+          (r) => new Date(r.createdAt || r.timestamp) >= weekAgo,
+        ).length;
 
-    setStats({ today: todayCount, week: weekCount, total: records.length });
+        setStats({ today: todayCount, week: weekCount, total: records.length });
+      } catch (err) {
+        console.error("Stats error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
   const handleLogout = () => {
@@ -127,7 +134,6 @@ function Profil() {
           Pengaturan
         </h2>
 
-        {/* Dark Mode */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-outline-variant">
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined text-on-surface-variant">
@@ -147,7 +153,6 @@ function Profil() {
           </button>
         </div>
 
-        {/* Notifikasi */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-outline-variant">
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined text-on-surface-variant">
