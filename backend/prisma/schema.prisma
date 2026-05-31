@@ -13,6 +13,7 @@ model User {
   username  String   @unique
   password  String
   role      String   @default("worker") // "admin" atau "worker"
+  records   Record[]
   createdAt DateTime @default(now())
 }
 
@@ -22,4 +23,21 @@ model Ayam {
   mati      Int
   pakan     Float
   createdAt DateTime @default(now())
+}
+
+model Record {
+  id          String   @id @default(uuid())
+  type        String   // berikan_pakan, kematian, pakan_masuk, populasi, suhu
+  jumlah      Float?
+  jenis       String?
+  waktu       String?
+  penyebab    String?
+  keterangan  String?
+  supplier    String?
+  tanggal     DateTime?
+  recordedBy  String
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
