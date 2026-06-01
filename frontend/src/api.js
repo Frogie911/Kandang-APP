@@ -1,9 +1,7 @@
 const API_URL = "https://kandang-app-production.up.railway.app";
-
 const getToken = () => localStorage.getItem("token");
 
 const api = {
-  // GET semua records
   getRecords: async () => {
     const res = await fetch(`${API_URL}/api/records`, {
       headers: { Authorization: `Bearer ${getToken()}` },
@@ -12,7 +10,6 @@ const api = {
     return res.json();
   },
 
-  // POST record baru
   createRecord: async (data) => {
     const res = await fetch(`${API_URL}/api/records`, {
       method: "POST",
@@ -26,31 +23,31 @@ const api = {
     return res.json();
   },
 
-  // Upload kematian dengan foto (TAMBAHAN BARU)
-  createDeathReport: async (data, photoFile) => {
+  createDeathReport: async (data, fotoFile) => {
     const formData = new FormData();
     formData.append("jumlah", data.jumlah);
     formData.append("penyebab", data.penyebab);
     formData.append("keterangan", data.keterangan);
-    if (photoFile) {
-      formData.append("photo", photoFile); // ← Multer akan terima sebagai req.file
+    if (fotoFile) {
+      formData.append("photo", fotoFile);
     }
 
     const res = await fetch(`${API_URL}/api/records/kematian`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${getToken()}`,
-        // ⚠️ JANGAN set Content-Type: application/json
-        // FormData akan set multipart/form-data otomatis
+        // JANGAN set Content-Type manual!
       },
       body: formData,
     });
 
-    if (!res.ok) throw new Error("Gagal simpan laporan kematian");
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Gagal simpan laporan kematian");
+    }
     return res.json();
   },
 
-  // GET dashboard stats
   getDashboard: async () => {
     const res = await fetch(`${API_URL}/api/dashboard`, {
       headers: { Authorization: `Bearer ${getToken()}` },
