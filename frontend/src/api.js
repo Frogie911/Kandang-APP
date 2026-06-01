@@ -26,6 +26,30 @@ const api = {
     return res.json();
   },
 
+  // Upload kematian dengan foto (TAMBAHAN BARU)
+  createDeathReport: async (data, photoFile) => {
+    const formData = new FormData();
+    formData.append("jumlah", data.jumlah);
+    formData.append("penyebab", data.penyebab);
+    formData.append("keterangan", data.keterangan);
+    if (photoFile) {
+      formData.append("photo", photoFile); // ← Multer akan terima sebagai req.file
+    }
+
+    const res = await fetch(`${API_URL}/api/records/kematian`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+        // ⚠️ JANGAN set Content-Type: application/json
+        // FormData akan set multipart/form-data otomatis
+      },
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("Gagal simpan laporan kematian");
+    return res.json();
+  },
+
   // GET dashboard stats
   getDashboard: async () => {
     const res = await fetch(`${API_URL}/api/dashboard`, {

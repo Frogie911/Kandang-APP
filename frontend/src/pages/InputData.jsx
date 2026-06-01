@@ -59,21 +59,46 @@ function InputData() {
       timestamp: new Date().toISOString(),
     };
 
+    // 1. JIKA FORM YANG DIKIRIM ADALAH KEMATIAN (MENGGUNAKAN API BARU)
+    if (type === "kematian") {
+      if (!kematianForm.jumlah) {
+        showToast("Jumlah ayam wajib diisi!", "error");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const dataLaporan = {
+          jumlah: Number(kematianForm.jumlah),
+          jenis: kematianForm.jenis,
+          keterangan: kematianForm.keterangan,
+        };
+
+        // Memanggil fungsi khusus multipart pembawa berkas gambar
+        await api.createDeathReport(dataLaporan, kematianForm.foto);
+        showToast("Data kematian berhasil disimpan dengan foto!", "success");
+
+        // Reset form kematian setelah berhasil
+        setKematianForm({
+          jenis: "mati",
+          jumlah: "",
+          keterangan: "",
+          foto: null,
+        });
+      } catch (err) {
+        console.error("Submit error kematian:", err);
+        showToast("Gagal simpan laporan kematian: " + err.message, "error");
+      } finally {
+        setLoading(false);
+      }
+      return; // Menghentikan baris kode agar tidak membaca fungsi JSON di bawah
+    }
+
+    // 2. JIKA FORM ADALAH PAKAN ATAU STOK MASUK (MENGGUNAKAN API LAMA / JSON)
     if (type === "berikan_pakan") {
       payload = { ...payload, ...pakanForm, jumlah: Number(pakanForm.jumlah) };
       if (!pakanForm.jumlah) {
         showToast("Jumlah pakan wajib diisi!", "error");
-        setLoading(false);
-        return;
-      }
-    } else if (type === "kematian") {
-      payload = {
-        ...payload,
-        ...kematianForm,
-        jumlah: Number(kematianForm.jumlah),
-      };
-      if (!kematianForm.jumlah) {
-        showToast("Jumlah ayam wajib diisi!", "error");
         setLoading(false);
         return;
       }
@@ -94,19 +119,12 @@ function InputData() {
       await api.createRecord(payload);
       showToast("Data berhasil disimpan!", "success");
 
-      // Reset form
+      // Reset form pakan harian atau pakan masuk
       if (type === "berikan_pakan")
         setPakanForm({
           jenis: "starter",
           jumlah: 45.0,
           waktu: new Date().toLocaleString("id-ID"),
-        });
-      if (type === "kematian")
-        setKematianForm({
-          jenis: "mati",
-          jumlah: "",
-          keterangan: "",
-          foto: null,
         });
       if (type === "pakan_masuk")
         setPakanMasukForm({
@@ -177,7 +195,7 @@ function InputData() {
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 bg-surface-container-lowest border border-outline-variant p-4 rounded-xl flex flex-col gap-2">
               <span className="font-label-lg text-label-lg text-outline">
-                Populasi Saat Ini
+                Populias Saat Ini
               </span>
               <div className="flex items-baseline gap-2">
                 <span className="font-headline-lg-mobile text-headline-lg-mobile text-primary">
