@@ -1,13 +1,9 @@
 import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
-import "dotenv/config"; // agar .env terbaca
-import jwt from "jsonwebtoken"; // Import JWT untuk middleware
+import "dotenv/config";
+import jwt from "jsonwebtoken";
 import authRouter from "./auth.js";
-
-// ==============================
-// IMPORT MULTER & CLOUDINARY (TAMBAH DI ATAS)
-// ==============================
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -21,107 +17,36 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Setup Multer (simpan di memory)
+// Setup Multer
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // Max 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("File harus berupa gambar"));
-    }
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("File harus berupa gambar"));
   },
 });
 
-// ==============================
-// MIDDLEWARE UTAMA
-// ==============================
+// Middleware
 app.use(cors());
 app.use(express.json());
-app.use("/auth", authRouter); // Mengelompokkan rute auth
+app.use("/auth", authRouter);
 
-// ==============================
-// MIDDLEWARE AUTENTIKASI (UPDATE DEBUG)
-// ==============================
+// Auth Middleware
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
-
   if (!token) return res.status(401).json({ error: "Token tidak ditemukan" });
 
-  console.log("JWT_SECRET exists:", !!process.env.JWT_SECRET); // Cek keberadaan secret
-  console.log("Token received:", token.substring(0, 20)); // Cek 20 karakter pertama token
-
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      console.log("JWT Error:", err.message); // Cek detail error token
-      return res
-        .status(403)
-        .json({ error: "Token tidak valid", detail: err.message });
-    }
+    if (err) return res.status(403).json({ error: "Token tidak valid" });
     req.user = user;
     next();
   });
 }
 
 // ==============================
-// API AYAM (LAMA)
-// ==============================
-// GET semua ayam
-app.get("/ayam", async (req, res) => {
-  try {
-    const data = await prisma.ayam.findMany();
-    res.json(data);
-  } catch (err) {
-    console.error("PRISMA ERROR:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET by ID
-app.get("/ayam/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = await prisma.ayam.findUnique({
-      where: { id: Number(id) },
-    });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal ambil data by id" });
-  }
-});
-
-// POST (tambah data)
-app.post("/ayam", async (req, res) => {
-  try {
-    const { jumlah, mati, pakan } = req.body;
-    const data = await prisma.ayam.create({
-      data: { jumlah, mati, pakan },
-    });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal tambah data" });
-  }
-});
-
-// PUT (update)
-app.put("/ayam/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { jumlah, mati, pakan } = req.body;
-    const data = await prisma.ayam.update({
-      where: { id: Number(id) },
-      data: { jumlah, mati, pakan },
-    });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal update data" });
-  }
-});
-
-// ==============================
-// API RECORDS (BARU)
+// API RECORDS
 // ==============================
 
 // GET semua records
@@ -136,63 +61,7 @@ app.get("/api/records", authenticateToken, async (req, res) => {
   }
 });
 
-// ENDPOINT KEMATIAN DENGAN FOTO (TAMBAH SETELAH GET /api/records)
-app.post(
-  "/api/records/kematian",
-  authenticateToken,
-  upload.single("photo"),
-  async (req, res) => {
-    try {
-      const { jumlah, penyebab, keterangan } = req.body;
-      let photoUrl = null;
-
-      // Upload foto ke Cloudinary jika ada
-      if (req.file) {
-        const uploadResult = await new Promise((resolve, reject) => {
-          cloudinary.uploader
-            .upload_stream(
-              {
-                folder: "sipoultry/kematian", // Organize di folder
-                resource_type: "auto",
-              },
-              (error, result) => {
-                if (error) reject(error);
-                else resolve(result);
-              },
-            )
-            .end(req.file.buffer);
-        });
-
-        photoUrl = uploadResult.secure_url;
-        console.log("Foto terupload ke Cloudinary:", photoUrl);
-      }
-
-      const recordedBy = req.user.username || req.user.id.toString();
-
-      const record = await prisma.record.create({
-        data: {
-          type: "kematian",
-          jumlah: Number(jumlah) || 0,
-          penyebab,
-          keterangan,
-          photoUrl, // ← Simpan URL foto
-          recordedBy,
-          userId: req.user.id,
-        },
-      });
-
-      res.status(201).json({
-        message: "Laporan kematian tersimpan dengan foto",
-        record,
-      });
-    } catch (err) {
-      console.error("POST /api/records/kematian error:", err);
-      res.status(500).json({ error: err.message });
-    }
-  },
-);
-
-// POST record baru (VERSI TERBARU)
+// POST record umum (pakan, stok)
 app.post("/api/records", authenticateToken, async (req, res) => {
   try {
     const {
@@ -205,15 +74,7 @@ app.post("/api/records", authenticateToken, async (req, res) => {
       supplier,
       tanggal,
     } = req.body;
-
     const recordedBy = req.user.username || req.user.id.toString();
-
-    console.log("Creating record:", {
-      type,
-      jumlah,
-      recordedBy,
-      userId: req.user.id,
-    });
 
     const record = await prisma.record.create({
       data: {
@@ -225,19 +86,81 @@ app.post("/api/records", authenticateToken, async (req, res) => {
         keterangan,
         supplier,
         tanggal: tanggal ? new Date(tanggal) : null,
-        recordedBy, // ← dari token, bukan body
+        recordedBy,
         userId: req.user.id,
       },
     });
-
     res.status(201).json({ message: "Data tersimpan", record });
   } catch (err) {
-    console.error("POST /api/records error:", err); // ← log detail untuk debugging
+    console.error("POST /api/records error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET dashboard stats
+// POST kematian dengan foto (ROBUST: kalau Cloudinary gagal, tetap simpan data)
+app.post(
+  "/api/records/kematian",
+  authenticateToken,
+  upload.single("photo"),
+  async (req, res) => {
+    try {
+      const { jumlah, penyebab, keterangan } = req.body;
+      let photoUrl = null;
+
+      // Upload ke Cloudinary dengan try-catch
+      if (req.file) {
+        try {
+          const uploadResult = await new Promise((resolve, reject) => {
+            cloudinary.uploader
+              .upload_stream(
+                { folder: "sipoultry/kematian", resource_type: "auto" },
+                (error, result) => {
+                  if (error) reject(error);
+                  else resolve(result);
+                },
+              )
+              .end(req.file.buffer);
+          });
+          photoUrl = uploadResult.secure_url;
+          console.log("✅ Foto terupload:", photoUrl);
+        } catch (cloudErr) {
+          // Kalau Cloudinary gagal (secret salah), jangan crash. Simpan data tanpa foto.
+          console.error(
+            "⚠️ Cloudinary gagal (cek API_SECRET di Railway):",
+            cloudErr.message,
+          );
+          photoUrl = null;
+        }
+      }
+
+      const recordedBy = req.user.username || req.user.id.toString();
+
+      const record = await prisma.record.create({
+        data: {
+          type: "kematian",
+          jumlah: Number(jumlah) || 0,
+          penyebab,
+          keterangan,
+          photoUrl,
+          recordedBy,
+          userId: req.user.id,
+        },
+      });
+
+      res.status(201).json({
+        message: photoUrl
+          ? "Laporan kematian tersimpan dengan foto"
+          : "Laporan kematian tersimpan (foto gagal upload, cek Cloudinary)",
+        record,
+      });
+    } catch (err) {
+      console.error("POST /api/records/kematian error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+// GET dashboard
 app.get("/api/dashboard", authenticateToken, async (req, res) => {
   try {
     const today = new Date();
@@ -248,9 +171,7 @@ app.get("/api/dashboard", authenticateToken, async (req, res) => {
         prisma.record.count({ where: { createdAt: { gte: today } } }),
         prisma.record.count({
           where: {
-            createdAt: {
-              gte: new Date(today - 7 * 24 * 60 * 60 * 1000),
-            },
+            createdAt: { gte: new Date(today - 7 * 24 * 60 * 60 * 1000) },
           },
         }),
         prisma.record.aggregate({
@@ -265,8 +186,8 @@ app.get("/api/dashboard", authenticateToken, async (req, res) => {
 
     res.json({
       ayamHidup: totalAyam._sum.jumlah || 1482,
-      stokPakan: 120, // nanti dari tabel stok
-      kematianHariIni: 0, // nanti dihitung
+      stokPakan: 120,
+      kematianHariIni: 0,
       todayRecords,
       weekRecords,
     });
