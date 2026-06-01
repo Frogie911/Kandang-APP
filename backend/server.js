@@ -110,7 +110,7 @@ app.get("/api/records", authenticateToken, async (req, res) => {
   }
 });
 
-// POST record baru
+// POST record baru (VERSI TERBARU)
 app.post("/api/records", authenticateToken, async (req, res) => {
   try {
     const {
@@ -122,8 +122,17 @@ app.post("/api/records", authenticateToken, async (req, res) => {
       keterangan,
       supplier,
       tanggal,
-      recordedBy,
     } = req.body;
+
+    // Ambil recordedBy dari token, bukan dari body (lebih aman)
+    const recordedBy = req.user.username || req.user.id.toString();
+
+    console.log("Creating record:", {
+      type,
+      jumlah,
+      recordedBy,
+      userId: req.user.id,
+    });
 
     const record = await prisma.record.create({
       data: {
@@ -135,13 +144,14 @@ app.post("/api/records", authenticateToken, async (req, res) => {
         keterangan,
         supplier,
         tanggal: tanggal ? new Date(tanggal) : null,
-        recordedBy,
-        userId: req.user.id, // ambil dari token yang di-decode middleware
+        recordedBy, // ← dari token, bukan body
+        userId: req.user.id,
       },
     });
 
     res.status(201).json({ message: "Data tersimpan", record });
   } catch (err) {
+    console.error("POST /api/records error:", err); // ← log detail untuk debugging
     res.status(500).json({ error: err.message });
   }
 });
