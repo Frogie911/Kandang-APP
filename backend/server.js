@@ -5,8 +5,34 @@ import "dotenv/config"; // agar .env terbaca
 import jwt from "jsonwebtoken"; // Import JWT untuk middleware
 import authRouter from "./auth.js";
 
+// ==============================
+// IMPORT MULTER & CLOUDINARY (TAMBAH DI ATAS)
+// ==============================
+import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
+
 const app = express();
 const prisma = new PrismaClient();
+
+// Setup Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Setup Multer (simpan di memory)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // Max 5MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("File harus berupa gambar"));
+    }
+  },
+});
 
 // ==============================
 // MIDDLEWARE UTAMA
@@ -110,6 +136,62 @@ app.get("/api/records", authenticateToken, async (req, res) => {
   }
 });
 
+// ENDPOINT KEMATIAN DENGAN FOTO (TAMBAH SETELAH GET /api/records)
+app.post(
+  "/api/records/kematian",
+  authenticateToken,
+  upload.single("photo"),
+  async (req, res) => {
+    try {
+      const { jumlah, penyebab, keterangan } = req.body;
+      let photoUrl = null;
+
+      // Upload foto ke Cloudinary jika ada
+      if (req.file) {
+        const uploadResult = await new Promise((resolve, reject) => {
+          cloudinary.uploader
+            .upload_stream(
+              {
+                folder: "sipoultry/kematian", // Organize di folder
+                resource_type: "auto",
+              },
+              (error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+              },
+            )
+            .end(req.file.buffer);
+        });
+
+        photoUrl = uploadResult.secure_url;
+        console.log("Foto terupload ke Cloudinary:", photoUrl);
+      }
+
+      const recordedBy = req.user.username || req.user.id.toString();
+
+      const record = await prisma.record.create({
+        data: {
+          type: "kematian",
+          jumlah: Number(jumlah) || 0,
+          penyebab,
+          keterangan,
+          photoUrl, // ← Simpan URL foto
+          recordedBy,
+          userId: req.user.id,
+        },
+      });
+
+      res.status(201).json({
+        message: "Laporan kematian tersimpan dengan foto",
+        record,
+      });
+    } catch (err) {
+      console.error("POST /api/records/kematian error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
 // POST record baru (VERSI TERBARU)
 app.post("/api/records", authenticateToken, async (req, res) => {
   try {
@@ -124,7 +206,6 @@ app.post("/api/records", authenticateToken, async (req, res) => {
       tanggal,
     } = req.body;
 
-    // Ambil recordedBy dari token, bukan dari body (lebih aman)
     const recordedBy = req.user.username || req.user.id.toString();
 
     console.log("Creating record:", {
