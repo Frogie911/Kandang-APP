@@ -20,7 +20,7 @@ function InputData() {
     waktu: new Date().toLocaleString("id-ID"),
   });
   const [kematianForm, setKematianForm] = useState({
-    jenis: "mati", // Nilai default dropdown/input di frontend kamu
+    jenis: "mati",
     jumlah: "",
     keterangan: "",
     foto: null,
@@ -68,15 +68,15 @@ function InputData() {
       }
 
       try {
-        // MENYESUAIKAN DENGAN FORMAT BACKEND (MENGGUNAKAN 'penyebab' DAN MENYERTAKAN 'recordedBy')
+        // Kita satukan datanya ke dalam satu objek bersih sesuai kebutuhan backend
         const dataLaporan = {
           jumlah: Number(kematianForm.jumlah),
-          penyebab: kematianForm.jenis, // Mengubah key 'jenis' frontend menjadi 'penyebab' sesuai Thunder Client
+          penyebab: kematianForm.jenis, // Mengubah 'jenis' menjadi 'penyebab'
           keterangan: kematianForm.keterangan,
-          recordedBy: username, // Menyertakan username pelapor agar tidak error 500
+          recordedBy: username,
         };
 
-        // Memanggil fungsi multipart pembawa berkas gambar ke backend
+        // Kirim dataLaporan dan file fisik gambarnya (kematianForm.foto)
         await api.createDeathReport(dataLaporan, kematianForm.foto);
         showToast("Data kematian berhasil disimpan dengan foto!", "success");
 
