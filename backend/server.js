@@ -15,15 +15,25 @@ app.use(cors());
 app.use(express.json());
 app.use("/auth", authRouter); // Mengelompokkan rute auth
 
-// Fungsi Middleware Autentikasi
+// ==============================
+// MIDDLEWARE AUTENTIKASI (UPDATE DEBUG)
+// ==============================
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Format: Bearer TOKEN
+  const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) return res.status(401).json({ error: "Token tidak ditemukan" });
 
+  console.log("JWT_SECRET exists:", !!process.env.JWT_SECRET); // Cek keberadaan secret
+  console.log("Token received:", token.substring(0, 20)); // Cek 20 karakter pertama token
+
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: "Token tidak valid" });
+    if (err) {
+      console.log("JWT Error:", err.message); // Cek detail error token
+      return res
+        .status(403)
+        .json({ error: "Token tidak valid", detail: err.message });
+    }
     req.user = user;
     next();
   });
