@@ -20,7 +20,7 @@ function InputData() {
     waktu: new Date().toLocaleString("id-ID"),
   });
   const [kematianForm, setKematianForm] = useState({
-    jenis: "mati",
+    jenis: "mati", // Nilai default dropdown/input di frontend kamu
     jumlah: "",
     keterangan: "",
     foto: null,
@@ -59,7 +59,7 @@ function InputData() {
       timestamp: new Date().toISOString(),
     };
 
-    // 1. JIKA FORM YANG DIKIRIM ADALAH KEMATIAN (MENGGUNAKAN API BARU)
+    // 1. JIKA FORM YANG DIKIRIM ADALAH KEMATIAN
     if (type === "kematian") {
       if (!kematianForm.jumlah) {
         showToast("Jumlah ayam wajib diisi!", "error");
@@ -68,13 +68,15 @@ function InputData() {
       }
 
       try {
+        // MENYESUAIKAN DENGAN FORMAT BACKEND (MENGGUNAKAN 'penyebab' DAN MENYERTAKAN 'recordedBy')
         const dataLaporan = {
           jumlah: Number(kematianForm.jumlah),
-          jenis: kematianForm.jenis,
+          penyebab: kematianForm.jenis, // Mengubah key 'jenis' frontend menjadi 'penyebab' sesuai Thunder Client
           keterangan: kematianForm.keterangan,
+          recordedBy: username, // Menyertakan username pelapor agar tidak error 500
         };
 
-        // Memanggil fungsi khusus multipart pembawa berkas gambar
+        // Memanggil fungsi multipart pembawa berkas gambar ke backend
         await api.createDeathReport(dataLaporan, kematianForm.foto);
         showToast("Data kematian berhasil disimpan dengan foto!", "success");
 
@@ -91,10 +93,10 @@ function InputData() {
       } finally {
         setLoading(false);
       }
-      return; // Menghentikan baris kode agar tidak membaca fungsi JSON di bawah
+      return;
     }
 
-    // 2. JIKA FORM ADALAH PAKAN ATAU STOK MASUK (MENGGUNAKAN API LAMA / JSON)
+    // 2. JIKA FORM ADALAH PAKAN ATAU STOK MASUK (MENGGUNAKAN JSON BIASA)
     if (type === "berikan_pakan") {
       payload = { ...payload, ...pakanForm, jumlah: Number(pakanForm.jumlah) };
       if (!pakanForm.jumlah) {
@@ -195,7 +197,7 @@ function InputData() {
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 bg-surface-container-lowest border border-outline-variant p-4 rounded-xl flex flex-col gap-2">
               <span className="font-label-lg text-label-lg text-outline">
-                Populias Saat Ini
+                Populasi Saat Ini
               </span>
               <div className="flex items-baseline gap-2">
                 <span className="font-headline-lg-mobile text-headline-lg-mobile text-primary">
