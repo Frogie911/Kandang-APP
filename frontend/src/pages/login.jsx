@@ -32,9 +32,10 @@ function Login() {
       // Simpan token & role
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
+      localStorage.setItem("username", username);
 
       // Redirect berdasarkan role
-      if (data.role === "Admin") {
+      if (data.role === "admin") {
         navigate("/admin/dashboard");
       } else {
         navigate("/worker/dashboard");
