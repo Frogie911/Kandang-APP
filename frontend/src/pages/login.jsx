@@ -1,54 +1,51 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // 1. Wajib import useNavigate
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate(); // 2. Inisialisasi fungsi navigate
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-
-    // --- LOGIKA ALGORITMA LOGIN ---
+    setLoading(true);
 
     try {
-      let data = null;
+      const res = await fetch(
+        "https://kandang-app-production.up.railway.app/auth/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        },
+      );
 
-      if (username === "admin" && password === "admin123") {
-        data = {
-          token: "mock-jwt-token-admin",
-          role: "admin",
-          username: "SuperAdmin",
-        };
-      } else if (username === "worker" && password === "worker123") {
-        data = {
-          token: "mock-jwt-token-worker",
-          role: "worker",
-          username: "RianWorker",
-        };
-      } else {
-        setError(
-          "Username atau password salah! (Gunakan: admin/admin123 atau worker/worker123)",
-        );
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || data.error || "Username atau password salah!");
         return;
       }
 
-      // 3. Simpan data ke localStorage agar bisa dibaca oleh ProtectedRoute kamu
+      // Simpan ke localStorage
       localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
-      localStorage.setItem("username", data.username);
+      localStorage.setItem("role", data.user.role);
+      localStorage.setItem("username", data.user.username);
 
-      // 4. ✅ KODE KAMU BERHASIL DIGABUNGKAN DI SINI
-      if (data.role === "admin") {
+      // Redirect berdasarkan role (lowercase sesuai database)
+      if (data.user.role === "admin") {
         navigate("/admin/dashboard");
       } else {
         navigate("/worker/dashboard");
       }
     } catch (err) {
-      setError("Gagal terhubung ke server.");
+      setError("Gagal terhubung ke server. Cek koneksi internet.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,9 +89,10 @@ function Login() {
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 transition"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 transition disabled:opacity-50"
           >
-            Login
+            {loading ? "Memproses..." : "Login"}
           </button>
         </form>
       </div>
