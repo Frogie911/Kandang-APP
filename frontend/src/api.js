@@ -1,4 +1,5 @@
-const API_URL = "https://kandang-app-production.up.railway.app";
+// api.js - TEMPORARY untuk testing lokal
+const API_URL = "http://localhost:3000";
 const getToken = () => localStorage.getItem("token");
 
 const api = {
