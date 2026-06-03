@@ -57,9 +57,13 @@ export default {
         DEFAULT: "0.25rem",
         lg: "0.5rem",
         xl: "0.75rem",
+        card: "12px", // ← TAMBAH: untuk rounded-card
+        "ui-element": "8px", // ← TAMBAH: untuk rounded-ui-element
         full: "9999px",
       },
       spacing: {
+        base: "8px", // ← TAMBAH: untuk gap-base
+        "nav-item-height": "56px", // ← TAMBAH: untuk h-nav-item-height
         "touch-target-min": "48px",
         gutter: "16px",
         "margin-mobile": "20px",
@@ -80,7 +84,10 @@ export default {
         "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }],
         "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
         "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
-        "label-lg": ["14px", { lineHeight: "20px", fontWeight: "600" }],
+        "label-lg": [
+          "14px",
+          { lineHeight: "20px", fontWeight: "600", letterSpacing: "0.05em" }, // ← FIX: tambah letterSpacing
+        ],
         "label-md": ["12px", { lineHeight: "16px", fontWeight: "500" }],
       },
     },

@@ -1,19 +1,30 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import InputData from "./pages/InputData"; // ← TAMBAH INI
+import InputData from "./pages/InputData";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Riwayat from "./pages/Riwayat";
 import Profil from "./pages/Profil";
+
+// Admin pages (BARU)
+import AdminDashboard from "./admin/AdminDashboard";
+import ManajemenBatch from "./admin/ManajemenBatch";
+import ManajemenPengguna from "./admin/ManajemenPengguna";
+import LaporanExport from "./admin/LaporanExport";
+import PengaturanAdmin from "./admin/PengaturanAdmin";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Route */}
+        {/* ============================== */}
+        {/* PUBLIC ROUTE                   */}
+        {/* ============================== */}
         <Route path="/login" element={<Login />} />
 
-        {/* Redirect root */}
+        {/* ============================== */}
+        {/* REDIRECT ROOT                  */}
+        {/* ============================== */}
         <Route
           path="/"
           element={
@@ -49,21 +60,6 @@ function App() {
           }
         />
 
-        {/* ============================== */}
-        {/* ROUTE KHUSUS ADMIN             */}
-        {/* ============================== */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ============================== */}
-        {/* ROUTE INPUT DATA (BARU)        */}
-        {/* ============================== */}
         <Route
           path="/input"
           element={
@@ -73,14 +69,10 @@ function App() {
           }
         />
 
-        {/* ============================== */}
-        {/* ROUTE HALAMAN LAIN (NANTI)     */}
-        {/* ============================== */}
-
         <Route
           path="/riwayat"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["worker", "admin"]}>
               <Riwayat />
             </ProtectedRoute>
           }
@@ -89,28 +81,101 @@ function App() {
         <Route
           path="/profil"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["worker", "admin"]}>
               <Profil />
             </ProtectedRoute>
           }
         />
 
+        {/* ============================== */}
+        {/* ROUTE KHUSUS ADMIN             */}
+        {/* ============================== */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/batch"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <ManajemenBatch />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/pengguna"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <ManajemenPengguna />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/laporan"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <LaporanExport />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/pengaturan"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <PengaturanAdmin />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ============================== */}
+        {/* UNAUTHORIZED & 404             */}
+        {/* ============================== */}
         <Route
           path="/unauthorized"
           element={
-            <div className="p-10 text-center">
-              <h1 className="text-2xl font-bold text-error">Akses Ditolak</h1>
-              <p className="text-on-surface-variant mt-2">
+            <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-10 text-center">
+              <span className="material-symbols-outlined text-6xl text-error mb-4">
+                gpp_bad
+              </span>
+              <h1 className="font-headline-md text-headline-md text-error">
+                Akses Ditolak
+              </h1>
+              <p className="font-body-md text-on-surface-variant mt-2">
                 Kamu tidak punya akses ke halaman ini.
               </p>
+              <button
+                onClick={() => window.history.back()}
+                className="mt-6 px-6 py-3 bg-primary text-on-primary rounded-xl font-label-lg active:scale-95 transition-transform"
+              >
+                Kembali
+              </button>
             </div>
           }
         />
 
-        {/* 404 */}
         <Route
           path="*"
-          element={<div className="p-10">404 - Halaman tidak ditemukan</div>}
+          element={
+            <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-10 text-center">
+              <span className="material-symbols-outlined text-6xl text-outline mb-4">
+                search_off
+              </span>
+              <h1 className="font-headline-md text-headline-md text-on-surface">
+                404
+              </h1>
+              <p className="font-body-md text-on-surface-variant mt-2">
+                Halaman tidak ditemukan
+              </p>
+            </div>
+          }
         />
       </Routes>
     </BrowserRouter>
