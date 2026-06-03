@@ -6,7 +6,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Riwayat from "./pages/Riwayat";
 import Profil from "./pages/Profil";
 
-// Admin pages (BARU)
+// Admin pages
 import AdminDashboard from "./admin/AdminDashboard";
 import ManajemenBatch from "./admin/ManajemenBatch";
 import ManajemenPengguna from "./admin/ManajemenPengguna";
