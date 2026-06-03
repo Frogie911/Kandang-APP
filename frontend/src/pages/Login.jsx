@@ -33,11 +33,11 @@ function Login() {
 
       // Simpan ke localStorage
       localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.user.role);
-      localStorage.setItem("username", data.user.username);
+      localStorage.setItem("role", data.role);
+      localStorage.setItem("username", data.username || "");
 
       // Redirect berdasarkan role (lowercase sesuai database)
-      if (data.user.role === "admin") {
+      if (data.role === "admin") {
         navigate("/admin/dashboard");
       } else {
         navigate("/worker/dashboard");
