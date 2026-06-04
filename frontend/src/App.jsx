@@ -12,6 +12,8 @@ import ManajemenBatch from "./admin/ManajemenBatch";
 import ManajemenPengguna from "./admin/ManajemenPengguna";
 import LaporanExport from "./admin/LaporanExport";
 import PengaturanAdmin from "./admin/PengaturanAdmin";
+import DetailLantai from "./admin/DetailLantai";
+import PerbandinganBatch from "./admin/PerbandinganBatch";
 
 function App() {
   return (
@@ -131,6 +133,24 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <PengaturanAdmin />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/lantai/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <DetailLantai />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/perbandingan"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <PerbandinganBatch />
             </ProtectedRoute>
           }
         />

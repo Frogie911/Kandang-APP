@@ -60,14 +60,14 @@ export default function AdminLayout({
         {children}
       </main>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation — FIX: pastikan 5 item muat di mobile */}
       <nav className="fixed bottom-0 w-full z-50 h-nav-item-height bg-surface border-t border-outline-variant flex justify-around items-center">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center h-full w-full transition-all duration-150 active:scale-90 ${
+              `flex flex-col items-center justify-center h-full w-full min-w-0 transition-all duration-150 active:scale-90 ${
                 isActive
                   ? "text-on-secondary-container"
                   : "text-on-surface-variant hover:text-primary"
@@ -76,10 +76,10 @@ export default function AdminLayout({
           >
             {({ isActive }) => (
               <div
-                className={`flex flex-col items-center justify-center px-4 py-1 rounded-full transition-all ${isActive ? "bg-secondary-container" : ""}`}
+                className={`flex flex-col items-center justify-center px-1 py-1 rounded-full transition-all ${isActive ? "bg-secondary-container" : ""}`}
               >
                 <span
-                  className="material-symbols-outlined"
+                  className="material-symbols-outlined text-[20px]"
                   style={
                     isActive
                       ? {
@@ -94,7 +94,9 @@ export default function AdminLayout({
                 >
                   {item.icon}
                 </span>
-                <span className="font-label-md mt-0.5">{item.label}</span>
+                <span className="font-label-md text-[10px] mt-0.5 truncate">
+                  {item.label}
+                </span>
               </div>
             )}
           </NavLink>
