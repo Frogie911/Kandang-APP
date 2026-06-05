@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AdminLayout from "../components/admin/AdminLayout";
 
 export default function ManajemenPengguna() {
+  const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -189,7 +190,8 @@ export default function ManajemenPengguna() {
 
   return (
     <AdminLayout title="Manajemen Pengguna" showBack rightAction={rightAction}>
-      <div className="space-y-6">
+      {/* ← FIX: Wrapper tanpa overflow, biar body scroll normal */}
+      <div className="space-y-6 pb-6">
         {/* ============================== */}
         {/* SUMMARY STATS BENTO            */}
         {/* ============================== */}
@@ -298,120 +300,121 @@ export default function ManajemenPengguna() {
       {/* ============================== */}
       {/* BOTTOM SHEET: OPSI PENGGUNA    */}
       {/* ============================== */}
-      <div
-        className={`fixed inset-0 bg-black/40 z-[60] transition-opacity duration-300 ${
-          sheetOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={() => setSheetOpen(false)}
-      />
-      <div
-        className={`fixed bottom-0 left-0 right-0 bg-surface-container-lowest rounded-t-3xl z-[70] transition-transform duration-300 ease-out p-6 pb-margin-mobile ${
-          sheetOpen ? "translate-y-0" : "translate-y-full"
-        }`}
-      >
+      <div className={`fixed inset-0 z-[60] ${sheetOpen ? "flex" : "hidden"}`}>
         <div
-          className="w-12 h-1 bg-outline-variant rounded-full mx-auto mb-6"
+          className="absolute inset-0 bg-black/40"
           onClick={() => setSheetOpen(false)}
         />
+        <div
+          className={`absolute bottom-0 left-0 right-0 bg-surface-container-lowest rounded-t-3xl z-[70] transition-transform duration-300 ease-out p-6 pb-margin-mobile max-h-[85vh] overflow-y-auto ${sheetOpen ? "translate-y-0" : "translate-y-full"}`}
+        >
+          <div
+            className="w-12 h-1 bg-outline-variant rounded-full mx-auto mb-6"
+            onClick={() => setSheetOpen(false)}
+          />
 
-        {/* BS Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-xl font-bold">
-            {selectedUser?.initials}
-          </div>
-          <div className="flex flex-col">
-            <span className="font-headline-sm text-headline-sm">
-              {selectedUser?.name}
-            </span>
-            <span className="font-body-md text-body-md text-on-surface-variant">
-              {selectedUser?.username}
-            </span>
-            <div className="flex gap-2 mt-1">
-              <span
-                className={`${selectedUser?.roleColor} px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase`}
-              >
-                {selectedUser?.role}
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-14 h-14 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-xl font-bold">
+              {selectedUser?.initials}
+            </div>
+            <div className="flex flex-col">
+              <span className="font-headline-sm text-headline-sm">
+                {selectedUser?.name}
               </span>
-              {selectedUser?.floor && (
-                <span className="bg-primary-container text-on-primary-container px-2 py-0.5 rounded-lg text-[10px] font-bold">
-                  {selectedUser?.floor}
+              <span className="font-body-md text-body-md text-on-surface-variant">
+                {selectedUser?.username}
+              </span>
+              <div className="flex gap-2 mt-1">
+                <span
+                  className={`${selectedUser?.roleColor} px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase`}
+                >
+                  {selectedUser?.role}
                 </span>
-              )}
+                {selectedUser?.floor && (
+                  <span className="bg-primary-container text-on-primary-container px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                    {selectedUser?.floor}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* BS Actions */}
-        <div className="space-y-1">
+          <div className="space-y-1">
+            <button
+              onClick={() => openModal("edit")}
+              className="w-full h-12 flex items-center gap-4 px-4 hover:bg-surface-container rounded-xl transition-colors text-on-surface"
+            >
+              <span className="material-symbols-outlined text-on-surface-variant">
+                edit
+              </span>
+              <span className="font-label-lg text-label-lg">Edit Profil</span>
+            </button>
+            <button
+              onClick={() => openModal("reset")}
+              className="w-full h-12 flex items-center gap-4 px-4 hover:bg-surface-container rounded-xl transition-colors text-on-surface"
+            >
+              <span className="material-symbols-outlined text-on-surface-variant">
+                key
+              </span>
+              <span className="font-label-lg text-label-lg">
+                Reset Password
+              </span>
+            </button>
+            <button
+              onClick={() => openModal("move")}
+              className="w-full h-12 flex items-center gap-4 px-4 hover:bg-surface-container rounded-xl transition-colors text-on-surface"
+            >
+              <span className="material-symbols-outlined text-on-surface-variant">
+                swap_horiz
+              </span>
+              <span className="font-label-lg text-label-lg">Pindah Lantai</span>
+            </button>
+            <button
+              onClick={() => {
+                setSheetOpen(false);
+                navigate(`/admin/pengguna/${selectedUser?.id}/riwayat`);
+              }}
+              className="w-full h-12 flex items-center gap-4 px-4 hover:bg-surface-container rounded-xl transition-colors text-on-surface"
+            >
+              <span className="material-symbols-outlined text-on-surface-variant">
+                history
+              </span>
+              <span className="font-label-lg text-label-lg">
+                Riwayat Aktivitas
+              </span>
+            </button>
+            <button className="w-full h-12 flex items-center gap-4 px-4 hover:bg-error-container/20 rounded-xl transition-colors text-error">
+              <span className="material-symbols-outlined">block</span>
+              <span className="font-label-lg text-label-lg">
+                Nonaktifkan Akun
+              </span>
+            </button>
+          </div>
           <button
-            onClick={() => openModal("edit")}
-            className="w-full h-12 flex items-center gap-4 px-4 hover:bg-surface-container rounded-xl transition-colors text-on-surface"
+            className="mt-6 w-full h-12 bg-surface-container-high rounded-full font-label-lg text-label-lg hover:bg-surface-container transition-colors"
+            onClick={() => setSheetOpen(false)}
           >
-            <span className="material-symbols-outlined text-on-surface-variant">
-              edit
-            </span>
-            <span className="font-label-lg text-label-lg">Edit Profil</span>
-          </button>
-          <button
-            onClick={() => openModal("reset")}
-            className="w-full h-12 flex items-center gap-4 px-4 hover:bg-surface-container rounded-xl transition-colors text-on-surface"
-          >
-            <span className="material-symbols-outlined text-on-surface-variant">
-              key
-            </span>
-            <span className="font-label-lg text-label-lg">Reset Password</span>
-          </button>
-          <button
-            onClick={() => openModal("move")}
-            className="w-full h-12 flex items-center gap-4 px-4 hover:bg-surface-container rounded-xl transition-colors text-on-surface"
-          >
-            <span className="material-symbols-outlined text-on-surface-variant">
-              swap_horiz
-            </span>
-            <span className="font-label-lg text-label-lg">Pindah Lantai</span>
-          </button>
-          <button className="w-full h-12 flex items-center gap-4 px-4 hover:bg-surface-container rounded-xl transition-colors text-on-surface">
-            <span className="material-symbols-outlined text-on-surface-variant">
-              history
-            </span>
-            <span className="font-label-lg text-label-lg">
-              Riwayat Aktivitas
-            </span>
-          </button>
-          <button className="w-full h-12 flex items-center gap-4 px-4 hover:bg-error-container/20 rounded-xl transition-colors text-error">
-            <span className="material-symbols-outlined">block</span>
-            <span className="font-label-lg text-label-lg">
-              Nonaktifkan Akun
-            </span>
+            Batal
           </button>
         </div>
-        <button
-          className="mt-6 w-full h-12 bg-surface-container-high rounded-full font-label-lg text-label-lg hover:bg-surface-container transition-colors"
-          onClick={() => setSheetOpen(false)}
-        >
-          Batal
-        </button>
       </div>
 
       {/* ============================== */}
       {/* MODAL: TAMBAH PENGGUNA BARU    */}
       {/* ============================== */}
       <div
-        className={`fixed inset-0 z-[80] flex-col justify-end transition-opacity duration-300 ${
-          addUserOpen ? "flex opacity-100" : "hidden opacity-0"
-        }`}
+        className={`fixed inset-0 z-[80] ${addUserOpen ? "flex" : "hidden"}`}
       >
         <div
           className="absolute inset-0 bg-black/50"
           onClick={closeAllModals}
         />
-        <div className="relative bg-surface-container-lowest w-full rounded-t-3xl p-6 flex flex-col gap-6 animate-[slide-up_0.3s_ease-out] max-h-[95vh] overflow-y-auto">
+        <div className="absolute bottom-0 left-0 right-0 bg-surface-container-lowest rounded-t-3xl p-6 flex flex-col gap-6 max-h-[95vh] overflow-y-auto">
           <div
             className="w-12 h-1 bg-outline-variant rounded-full mx-auto"
             onClick={closeAllModals}
           />
 
-          {/* Header */}
           <div className="flex justify-between items-center">
             <h2 className="font-headline-sm text-headline-sm text-on-surface">
               Tambah Pengguna Baru
@@ -426,7 +429,6 @@ export default function ManajemenPengguna() {
             </button>
           </div>
 
-          {/* Avatar Preview */}
           <div className="flex flex-col items-center">
             <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center shadow-sm">
               <span className="text-headline-sm text-on-primary-container font-headline-sm">
@@ -445,12 +447,10 @@ export default function ManajemenPengguna() {
             </p>
           </div>
 
-          {/* Form */}
           <form
             className="flex flex-col gap-5"
             onSubmit={(e) => e.preventDefault()}
           >
-            {/* Nama Lengkap */}
             <div className="space-y-1.5">
               <label className="font-label-md text-on-surface-variant px-1">
                 Nama Lengkap
@@ -471,7 +471,6 @@ export default function ManajemenPengguna() {
               </div>
             </div>
 
-            {/* Username */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-end px-1">
                 <label className="font-label-md text-on-surface-variant">
@@ -505,7 +504,6 @@ export default function ManajemenPengguna() {
               </p>
             </div>
 
-            {/* Password */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-end px-1">
                 <label className="font-label-md text-on-surface-variant">
@@ -533,7 +531,6 @@ export default function ManajemenPengguna() {
               </div>
             </div>
 
-            {/* Role */}
             <div className="space-y-1.5">
               <label className="font-label-md text-on-surface-variant px-1">
                 Role Pengguna
@@ -570,7 +567,6 @@ export default function ManajemenPengguna() {
               </div>
             </div>
 
-            {/* Lantai Penugasan */}
             {newUser.role === "Worker" && (
               <div className="space-y-1.5">
                 <div className="flex justify-between items-end px-1">
@@ -600,7 +596,6 @@ export default function ManajemenPengguna() {
               </div>
             )}
 
-            {/* Izin Akses */}
             <div className="space-y-2">
               <label className="font-label-md text-on-surface-variant px-1">
                 Izin Akses
@@ -647,7 +642,6 @@ export default function ManajemenPengguna() {
               </div>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               className="w-full h-14 mt-4 bg-primary text-on-primary rounded-xl font-label-lg shadow-md flex items-center justify-center gap-3 active:scale-95 transition-transform"
@@ -663,21 +657,18 @@ export default function ManajemenPengguna() {
       {/* MODAL: RESET PASSWORD          */}
       {/* ============================== */}
       <div
-        className={`fixed inset-0 z-[80] flex-col justify-end transition-opacity duration-300 ${
-          resetPasswordOpen ? "flex opacity-100" : "hidden opacity-0"
-        }`}
+        className={`fixed inset-0 z-[80] ${resetPasswordOpen ? "flex" : "hidden"}`}
       >
         <div
           className="absolute inset-0 bg-black/50"
           onClick={closeAllModals}
         />
-        <div className="relative bg-surface-container-lowest w-full rounded-t-3xl p-6 flex flex-col gap-6 animate-[slide-up_0.3s_ease-out] max-h-[90vh] overflow-y-auto">
+        <div className="absolute bottom-0 left-0 right-0 bg-surface-container-lowest rounded-t-3xl p-6 flex flex-col gap-6">
           <div
             className="w-12 h-1 bg-outline-variant rounded-full mx-auto"
             onClick={closeAllModals}
           />
 
-          {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary-container rounded-full flex items-center justify-center">
@@ -702,7 +693,6 @@ export default function ManajemenPengguna() {
             </button>
           </div>
 
-          {/* Subtitle */}
           <p className="font-label-md text-label-md text-on-surface-variant">
             Mereset password untuk:{" "}
             <span className="text-on-surface font-bold">
@@ -710,7 +700,6 @@ export default function ManajemenPengguna() {
             </span>
           </p>
 
-          {/* Warning Card */}
           <div className="bg-error-container text-on-error-container rounded-xl p-4 flex gap-3 items-start">
             <span
               className="material-symbols-outlined shrink-0"
@@ -724,9 +713,7 @@ export default function ManajemenPengguna() {
             </p>
           </div>
 
-          {/* Form */}
           <div className="space-y-4">
-            {/* Password Baru */}
             <div className="space-y-1.5">
               <label className="font-label-lg text-label-lg text-on-surface-variant ml-1">
                 Password Baru
@@ -760,7 +747,6 @@ export default function ManajemenPengguna() {
               </div>
             </div>
 
-            {/* Strength Indicator */}
             <div className="space-y-2 px-1">
               <div className="flex gap-1.5 h-1.5 w-full">
                 {[0, 1, 2, 3].map((i) => (
@@ -784,7 +770,6 @@ export default function ManajemenPengguna() {
               </p>
             </div>
 
-            {/* Konfirmasi Password */}
             <div className="space-y-1.5">
               <label className="font-label-lg text-label-lg text-on-surface-variant ml-1">
                 Konfirmasi Password Baru
@@ -831,11 +816,10 @@ export default function ManajemenPengguna() {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="space-y-3 pb-4">
             <button className="w-full h-14 bg-primary text-on-primary rounded-xl font-label-lg text-label-lg flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform duration-150">
-              <span className="material-symbols-outlined">lock_reset</span>
-              Reset Password
+              <span className="material-symbols-outlined">lock_reset</span>Reset
+              Password
             </button>
             <button
               onClick={closeAllModals}
@@ -851,21 +835,18 @@ export default function ManajemenPengguna() {
       {/* MODAL: PINDAH LANTAI           */}
       {/* ============================== */}
       <div
-        className={`fixed inset-0 z-[80] flex-col justify-end transition-opacity duration-300 ${
-          moveFloorOpen ? "flex opacity-100" : "hidden opacity-0"
-        }`}
+        className={`fixed inset-0 z-[80] ${moveFloorOpen ? "flex" : "hidden"}`}
       >
         <div
           className="absolute inset-0 bg-black/50"
           onClick={closeAllModals}
         />
-        <div className="relative bg-surface-container-lowest w-full rounded-t-3xl p-6 flex flex-col gap-6 animate-[slide-up_0.3s_ease-out] max-h-[90vh] overflow-y-auto">
+        <div className="absolute bottom-0 left-0 right-0 bg-surface-container-lowest rounded-t-3xl p-6 flex flex-col gap-6">
           <div
             className="w-12 h-1 bg-outline-variant rounded-full mx-auto"
             onClick={closeAllModals}
           />
 
-          {/* Header */}
           <div className="flex items-center justify-between">
             <h3 className="font-headline-sm text-headline-sm text-on-surface">
               Pindah Lantai
@@ -880,7 +861,6 @@ export default function ManajemenPengguna() {
             </button>
           </div>
 
-          {/* User Info */}
           <div className="bg-surface-container-low rounded-xl p-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-lg shadow-sm">
               {selectedUser?.initials}
@@ -895,14 +875,12 @@ export default function ManajemenPengguna() {
             </div>
           </div>
 
-          {/* Section Title */}
           <div className="mb-1">
             <h4 className="font-label-lg text-on-surface-variant uppercase tracking-wider">
               PILIH LANTAI BARU
             </h4>
           </div>
 
-          {/* Lantai Cards */}
           <div className="space-y-3">
             {floors.map((floor) => {
               const isCurrent = floor.name === selectedUser?.currentFloor;
@@ -963,7 +941,6 @@ export default function ManajemenPengguna() {
             })}
           </div>
 
-          {/* Notes */}
           <div className="bg-surface-container-low rounded-xl p-4 flex gap-3">
             <span className="material-symbols-outlined text-primary text-[20px]">
               info
@@ -974,8 +951,7 @@ export default function ManajemenPengguna() {
             </p>
           </div>
 
-          {/* Buttons */}
-          <div className="space-y-3">
+          <div className="space-y-3 pb-4">
             <button
               disabled={!selectedFloor}
               className={`w-full h-14 rounded-xl font-label-lg shadow-md flex items-center justify-center gap-2 transition-all ${
@@ -1003,21 +979,18 @@ export default function ManajemenPengguna() {
       {/* MODAL: EDIT PROFIL             */}
       {/* ============================== */}
       <div
-        className={`fixed inset-0 z-[80] flex-col justify-end transition-opacity duration-300 ${
-          editProfileOpen ? "flex opacity-100" : "hidden opacity-0"
-        }`}
+        className={`fixed inset-0 z-[80] ${editProfileOpen ? "flex" : "hidden"}`}
       >
         <div
           className="absolute inset-0 bg-black/50"
           onClick={closeAllModals}
         />
-        <div className="relative bg-surface-container-lowest w-full rounded-t-3xl p-6 flex flex-col gap-6 animate-[slide-up_0.3s_ease-out]">
+        <div className="absolute bottom-0 left-0 right-0 bg-surface-container-lowest rounded-t-3xl p-6 flex flex-col gap-6">
           <div
             className="w-12 h-1 bg-outline-variant rounded-full mx-auto"
             onClick={closeAllModals}
           />
 
-          {/* Header */}
           <div className="flex items-center justify-between">
             <h2 className="font-headline-sm text-headline-sm text-on-surface">
               Edit Profil
@@ -1032,7 +1005,6 @@ export default function ManajemenPengguna() {
             </button>
           </div>
 
-          {/* Form */}
           <form
             className="flex flex-col gap-5"
             onSubmit={(e) => e.preventDefault()}
@@ -1077,8 +1049,8 @@ export default function ManajemenPengguna() {
               type="submit"
               className="w-full h-14 bg-primary text-on-primary rounded-xl font-label-lg shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform"
             >
-              <span className="material-symbols-outlined">save</span>
-              Simpan Perubahan
+              <span className="material-symbols-outlined">save</span>Simpan
+              Perubahan
             </button>
           </form>
         </div>

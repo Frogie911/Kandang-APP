@@ -1,19 +1,22 @@
-import { useEffect } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AdminLayout from "../components/admin/AdminLayout";
 import StatCard from "../components/admin/StatCard";
 
 export default function AdminDashboard() {
-  useEffect(() => {
-    // Micro-interaction for floor cards (non-StatCard elements)
-    const cards = document.querySelectorAll(".floor-card");
-    const handleClick = (e) => {
-      e.currentTarget.classList.add("scale-[0.98]");
-      setTimeout(() => e.currentTarget.classList.remove("scale-[0.98]"), 100);
-    };
-    cards.forEach((card) => card.addEventListener("click", handleClick));
-    return () =>
-      cards.forEach((card) => card.removeEventListener("click", handleClick));
-  }, []);
+  const navigate = useNavigate();
+
+  // State untuk micro-interaction scale pada floor card
+  const [pressedCard, setPressedCard] = useState(null);
+
+  // Handler: set card yang sedang di-press, auto-reset setelah 100ms
+  const handleCardPress = (index, floorId) => {
+    setPressedCard(index);
+    setTimeout(() => {
+      setPressedCard(null);
+      navigate(`/admin/lantai/${floorId}`);
+    }, 100);
+  };
 
   return (
     <AdminLayout title="Admin Dashboard">
@@ -76,7 +79,13 @@ export default function AdminDashboard() {
           Status Lantai
         </h3>
         <div className="space-y-3">
-          <div className="floor-card bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex items-center justify-between active:bg-surface-container-low transition-colors cursor-pointer">
+          {/* Lantai 1 */}
+          <div
+            onClick={() => handleCardPress(0, 1)}
+            className={`floor-card bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex items-center justify-between active:bg-surface-container-low transition-all cursor-pointer ${
+              pressedCard === 0 ? "scale-[0.98]" : "scale-100"
+            }`}
+          >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold">
                 L1
@@ -92,7 +101,14 @@ export default function AdminDashboard() {
               chevron_right
             </span>
           </div>
-          <div className="floor-card bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex items-center justify-between active:bg-surface-container-low transition-colors cursor-pointer">
+
+          {/* Lantai 2 */}
+          <div
+            onClick={() => handleCardPress(1, 2)}
+            className={`floor-card bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex items-center justify-between active:bg-surface-container-low transition-all cursor-pointer ${
+              pressedCard === 1 ? "scale-[0.98]" : "scale-100"
+            }`}
+          >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold">
                 L2
@@ -108,7 +124,14 @@ export default function AdminDashboard() {
               chevron_right
             </span>
           </div>
-          <div className="floor-card bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex items-center justify-between active:bg-surface-container-low transition-colors cursor-pointer">
+
+          {/* Lantai 3 */}
+          <div
+            onClick={() => handleCardPress(2, 3)}
+            className={`floor-card bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex items-center justify-between active:bg-surface-container-low transition-all cursor-pointer ${
+              pressedCard === 2 ? "scale-[0.98]" : "scale-100"
+            }`}
+          >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold">
                 L3
@@ -203,17 +226,13 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* Quick Actions */}
-      <section className="grid grid-cols-2 gap-4 pb-4">
-        <button className="h-12 border border-outline text-primary font-label-lg rounded-lg flex items-center justify-center gap-2 active:bg-primary/5 transition-colors">
+      {/* Quick Actions — Hanya Export Laporan */}
+      <section className="pb-4">
+        <button className="w-full h-12 border border-outline text-primary font-label-lg rounded-lg flex items-center justify-center gap-2 active:bg-primary/5 transition-colors">
           <span className="material-symbols-outlined text-[20px]">
             file_download
           </span>
           Export Laporan
-        </button>
-        <button className="h-12 bg-primary text-on-primary font-label-lg rounded-lg flex items-center justify-center gap-2 active:opacity-90 transition-opacity">
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          Tambah Batch
         </button>
       </section>
     </AdminLayout>

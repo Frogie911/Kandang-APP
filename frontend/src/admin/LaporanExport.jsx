@@ -4,6 +4,11 @@ import StatCard from "../components/admin/StatCard";
 
 export default function LaporanExport() {
   const [scheduledReportOpen, setScheduledReportOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  // ← BARU: State untuk periode yang dipilih
+  const [selectedPeriod, setSelectedPeriod] = useState("batch"); // "7hari" | "30hari" | "batch"
+
   const [selectedDays, setSelectedDays] = useState(["Sen"]);
   const [selectedFormats, setSelectedFormats] = useState(["Excel", "PDF"]);
   const [reportSettings, setReportSettings] = useState({
@@ -69,9 +74,74 @@ export default function LaporanExport() {
     }));
   };
 
+  // Mock data untuk preview laporan (dinamis berdasarkan periode)
+  const getPreviewData = () => {
+    const baseData = {
+      periode:
+        selectedPeriod === "7hari"
+          ? "12 Mei 2026 – 18 Mei 2026"
+          : selectedPeriod === "30hari"
+            ? "19 April 2026 – 18 Mei 2026"
+            : "12 Mei 2026 – Sekarang",
+      batch: "Batch #3 (Aktif)",
+      totalPakan:
+        selectedPeriod === "7hari"
+          ? "2,450 kg"
+          : selectedPeriod === "30hari"
+            ? "10,500 kg"
+            : "24,570 kg",
+      totalKematian:
+        selectedPeriod === "7hari"
+          ? "127 ekor"
+          : selectedPeriod === "30hari"
+            ? "340 ekor"
+            : "127 ekor",
+      rataFCR:
+        selectedPeriod === "7hari"
+          ? "1.82"
+          : selectedPeriod === "30hari"
+            ? "1.79"
+            : "1.82",
+      ayamHidup: "14,873 ekor",
+      efisiensi: "94.2%",
+      deplesi:
+        selectedPeriod === "7hari"
+          ? "0.85%"
+          : selectedPeriod === "30hari"
+            ? "2.27%"
+            : "0.85%",
+    };
+
+    const harian7 = [
+      { tanggal: "12 Mei", pakan: 350, mati: 3 },
+      { tanggal: "13 Mei", pakan: 360, mati: 5 },
+      { tanggal: "14 Mei", pakan: 340, mati: 2 },
+      { tanggal: "15 Mei", pakan: 380, mati: 8 },
+      { tanggal: "16 Mei", pakan: 370, mati: 4 },
+      { tanggal: "17 Mei", pakan: 355, mati: 3 },
+      { tanggal: "18 Mei", pakan: 365, mati: 2 },
+    ];
+
+    const harian30 = [
+      { tanggal: "19 Apr", pakan: 320, mati: 4 },
+      { tanggal: "26 Apr", pakan: 340, mati: 6 },
+      { tanggal: "03 Mei", pakan: 355, mati: 5 },
+      { tanggal: "10 Mei", pakan: 360, mati: 3 },
+      { tanggal: "18 Mei", pakan: 365, mati: 2 },
+    ];
+
+    return {
+      ...baseData,
+      harian: selectedPeriod === "30hari" ? harian30 : harian7,
+    };
+  };
+
+  const previewData = getPreviewData();
+
   return (
     <AdminLayout title="Laporan & Export" showBack>
-      <div className="space-y-6">
+      {/* ← FIX: Wrapper utama tanpa overflow-y-auto, biar body yang scroll */}
+      <div className="space-y-6 pb-6">
         {/* ============================== */}
         {/* SECTION 1: DATE RANGE SELECTOR */}
         {/* ============================== */}
@@ -119,18 +189,45 @@ export default function LaporanExport() {
               <option>Batch #1 (Selesai)</option>
             </select>
           </div>
+
+          {/* ← FIX: Filter chips dengan state & handler */}
           <div className="flex flex-wrap gap-2 pt-1">
-            <button className="px-4 py-2 rounded-full border border-outline-variant text-label-lg hover:bg-surface-container-low transition-colors">
+            <button
+              onClick={() => setSelectedPeriod("7hari")}
+              className={`px-4 py-2 rounded-full text-label-lg transition-all active:scale-95 ${
+                selectedPeriod === "7hari"
+                  ? "bg-primary-container text-on-primary-container font-bold"
+                  : "border border-outline-variant hover:bg-surface-container-low"
+              }`}
+            >
               7 Hari
             </button>
-            <button className="px-4 py-2 rounded-full border border-outline-variant text-label-lg hover:bg-surface-container-low transition-colors">
+            <button
+              onClick={() => setSelectedPeriod("30hari")}
+              className={`px-4 py-2 rounded-full text-label-lg transition-all active:scale-95 ${
+                selectedPeriod === "30hari"
+                  ? "bg-primary-container text-on-primary-container font-bold"
+                  : "border border-outline-variant hover:bg-surface-container-low"
+              }`}
+            >
               30 Hari
             </button>
-            <button className="px-4 py-2 rounded-full bg-primary-container text-on-primary-container text-label-lg font-bold">
+            <button
+              onClick={() => setSelectedPeriod("batch")}
+              className={`px-4 py-2 rounded-full text-label-lg transition-all active:scale-95 ${
+                selectedPeriod === "batch"
+                  ? "bg-primary-container text-on-primary-container font-bold"
+                  : "border border-outline-variant hover:bg-surface-container-low"
+              }`}
+            >
               Batch Ini
             </button>
           </div>
-          <button className="w-full h-12 bg-primary text-on-primary font-label-lg rounded-lg active:scale-[0.98] transition-transform shadow-md mt-2 flex items-center justify-center gap-2">
+
+          <button
+            onClick={() => setPreviewOpen(true)}
+            className="w-full h-12 bg-primary text-on-primary font-label-lg rounded-lg active:scale-[0.98] transition-transform shadow-md mt-2 flex items-center justify-center gap-2"
+          >
             <span className="material-symbols-outlined text-[20px]">
               visibility
             </span>
@@ -333,7 +430,7 @@ export default function LaporanExport() {
         {/* ============================== */}
         {/* SECTION 6: SCHEDULED REPORTS   */}
         {/* ============================== */}
-        <section className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden mb-8">
+        <section className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
           <div className="p-4 flex justify-between items-center border-b border-outline-variant">
             <h2 className="font-headline-sm text-headline-sm">
               Laporan Otomatis
@@ -399,25 +496,172 @@ export default function LaporanExport() {
       </div>
 
       {/* ============================== */}
+      {/* MODAL: PREVIEW LAPORAN         */}
+      {/* ============================== */}
+      <div
+        className={`fixed inset-0 z-[60] ${previewOpen ? "flex" : "hidden"}`}
+      >
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={() => setPreviewOpen(false)}
+        />
+        {/* ← FIX: Modal pakai absolute bottom-0, body yang scroll */}
+        <div className="absolute bottom-0 left-0 right-0 bg-surface-container-lowest rounded-t-3xl p-6 flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
+          <div
+            className="w-12 h-1 bg-outline-variant rounded-full mx-auto cursor-pointer"
+            onClick={() => setPreviewOpen(false)}
+          />
+
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center">
+                <span className="material-symbols-outlined">visibility</span>
+              </div>
+              <div>
+                <h2 className="font-headline-sm text-headline-sm">
+                  Preview Laporan
+                </h2>
+                <p className="font-label-md text-label-md text-on-surface-variant">
+                  {previewData.periode}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setPreviewOpen(false)}
+              className="p-2 hover:bg-surface-container-high rounded-full transition-colors"
+            >
+              <span className="material-symbols-outlined text-outline">
+                close
+              </span>
+            </button>
+          </div>
+
+          <div className="bg-surface-container-low rounded-xl p-4 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="font-label-md text-on-surface-variant">
+                Batch
+              </span>
+              <span className="font-label-lg text-on-surface font-bold">
+                {previewData.batch}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="font-label-md text-on-surface-variant">
+                Periode
+              </span>
+              <span className="font-label-lg text-on-surface">
+                {previewData.periode}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-3 flex flex-col items-center">
+              <span className="material-symbols-outlined text-primary text-[24px]">
+                grass
+              </span>
+              <span className="font-headline-sm text-headline-sm text-on-surface mt-1">
+                {previewData.totalPakan}
+              </span>
+              <span className="font-label-md text-label-md text-on-surface-variant">
+                Total Pakan
+              </span>
+            </div>
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-3 flex flex-col items-center">
+              <span className="material-symbols-outlined text-error text-[24px]">
+                favorite_border
+              </span>
+              <span className="font-headline-sm text-headline-sm text-error mt-1">
+                {previewData.totalKematian}
+              </span>
+              <span className="font-label-md text-label-md text-on-surface-variant">
+                Kematian
+              </span>
+            </div>
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-3 flex flex-col items-center">
+              <span className="material-symbols-outlined text-primary text-[24px]">
+                trending_up
+              </span>
+              <span className="font-headline-sm text-headline-sm text-primary mt-1">
+                {previewData.rataFCR}
+              </span>
+              <span className="font-label-md text-label-md text-on-surface-variant">
+                Rata-rata FCR
+              </span>
+            </div>
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-3 flex flex-col items-center">
+              <span className="material-symbols-outlined text-primary text-[24px]">
+                pets
+              </span>
+              <span className="font-headline-sm text-headline-sm text-on-surface mt-1">
+                {previewData.ayamHidup}
+              </span>
+              <span className="font-label-md text-label-md text-on-surface-variant">
+                Ayam Hidup
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-outline-variant">
+              <h3 className="font-label-lg text-label-lg">Data Harian</h3>
+            </div>
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-surface-container text-label-md text-on-surface-variant">
+                <tr>
+                  <th className="py-2 px-4 font-semibold">Tanggal</th>
+                  <th className="py-2 px-4 font-semibold text-right">
+                    Pakan (kg)
+                  </th>
+                  <th className="py-2 px-4 font-semibold text-right">Mati</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant text-body-md">
+                {previewData.harian.map((row, idx) => (
+                  <tr
+                    key={idx}
+                    className="hover:bg-surface-container-low transition-colors"
+                  >
+                    <td className="py-3 px-4">{row.tanggal}</td>
+                    <td className="py-3 px-4 text-right">{row.pakan}</td>
+                    <td className="py-3 px-4 text-right text-error">
+                      {row.mati}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-col gap-3 pb-4">
+            <button className="w-full h-14 bg-primary text-on-primary rounded-xl font-label-lg shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform">
+              <span className="material-symbols-outlined">download</span>
+              Export Excel
+            </button>
+            <button className="w-full h-12 border border-outline text-primary font-label-lg rounded-lg flex items-center justify-center gap-2 active:bg-primary/5 transition-colors">
+              <span className="material-symbols-outlined">picture_as_pdf</span>
+              Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================== */}
       {/* MODAL: LAPORAN OTOMATIS DETAIL */}
       {/* ============================== */}
       <div
-        className={`fixed inset-0 z-[60] flex-col justify-end transition-opacity duration-300 ${
-          scheduledReportOpen ? "flex opacity-100" : "hidden opacity-0"
-        }`}
+        className={`fixed inset-0 z-[60] ${scheduledReportOpen ? "flex" : "hidden"}`}
       >
         <div
           className="absolute inset-0 bg-black/50"
           onClick={() => setScheduledReportOpen(false)}
         />
-        <div className="relative bg-surface-container-lowest w-full rounded-t-3xl p-6 flex flex-col gap-6 animate-[slide-up_0.3s_ease-out] max-h-[95vh] overflow-y-auto">
-          {/* Handle */}
+        <div className="absolute bottom-0 left-0 right-0 bg-surface-container-lowest rounded-t-3xl p-6 flex flex-col gap-6 max-h-[95vh] overflow-y-auto">
           <div
-            className="w-12 h-1 bg-outline-variant rounded-full mx-auto"
+            className="w-12 h-1 bg-outline-variant rounded-full mx-auto cursor-pointer"
             onClick={() => setScheduledReportOpen(false)}
           />
 
-          {/* Header */}
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center">
@@ -437,7 +681,6 @@ export default function LaporanExport() {
             </button>
           </div>
 
-          {/* Master Toggle */}
           <div className="bg-surface-container-low rounded-xl p-4 flex items-center justify-between">
             <div>
               <p className="font-label-lg text-on-surface">
@@ -467,7 +710,6 @@ export default function LaporanExport() {
             JADWAL LAPORAN
           </h3>
 
-          {/* Weekly Report Card */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <span className="font-label-lg text-on-surface">
@@ -485,23 +727,17 @@ export default function LaporanExport() {
                 className="w-5 h-5 accent-primary rounded"
               />
             </div>
-            {/* Day Selector */}
             <div className="grid grid-cols-7 gap-2 mb-4">
               {days.map((day) => (
                 <button
                   key={day}
                   onClick={() => toggleDay(day)}
-                  className={`text-center py-2 rounded-lg font-label-md cursor-pointer transition-all ${
-                    selectedDays.includes(day)
-                      ? "bg-primary-container text-white"
-                      : "bg-surface-container-low text-on-surface-variant hover:bg-surface-variant"
-                  }`}
+                  className={`text-center py-2 rounded-lg font-label-md cursor-pointer transition-all ${selectedDays.includes(day) ? "bg-primary-container text-white" : "bg-surface-container-low text-on-surface-variant hover:bg-surface-variant"}`}
                 >
                   {day}
                 </button>
               ))}
             </div>
-            {/* Time Input */}
             <div className="flex items-center bg-surface-container-low px-3 py-2 rounded-lg mb-4 w-fit">
               <span className="material-symbols-outlined text-on-surface-variant text-[18px] mr-2">
                 access_time
@@ -510,7 +746,6 @@ export default function LaporanExport() {
                 {reportSettings.weeklyTime}
               </span>
             </div>
-            {/* Checkboxes */}
             <div className="space-y-3">
               {[
                 { key: "ringkasanKPI", label: "Ringkasan KPI" },
@@ -539,7 +774,6 @@ export default function LaporanExport() {
             </div>
           </div>
 
-          {/* Monthly Report Card */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <span className="font-label-lg text-on-surface">
@@ -600,7 +834,6 @@ export default function LaporanExport() {
             </div>
           </div>
 
-          {/* Email Settings Card */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
             <p className="font-label-lg text-on-surface mb-3">
               Tujuan Pengiriman Email
@@ -636,7 +869,6 @@ export default function LaporanExport() {
             </button>
           </div>
 
-          {/* Format Section */}
           <div className="mb-4">
             <p className="font-label-lg text-on-surface mb-3">
               Format Lampiran
@@ -646,11 +878,7 @@ export default function LaporanExport() {
                 <button
                   key={format.name}
                   onClick={() => toggleFormat(format.name)}
-                  className={`border-2 p-3 rounded-xl text-center font-label-lg cursor-pointer flex flex-col items-center transition-all ${
-                    selectedFormats.includes(format.name)
-                      ? "border-primary bg-primary-container text-white"
-                      : "border-outline-variant bg-surface-container-low text-on-surface-variant hover:bg-surface-variant"
-                  }`}
+                  className={`border-2 p-3 rounded-xl text-center font-label-lg cursor-pointer flex flex-col items-center transition-all ${selectedFormats.includes(format.name) ? "border-primary bg-primary-container text-white" : "border-outline-variant bg-surface-container-low text-on-surface-variant hover:bg-surface-variant"}`}
                 >
                   <span className="material-symbols-outlined mb-1">
                     {format.icon}
@@ -661,7 +889,6 @@ export default function LaporanExport() {
             </div>
           </div>
 
-          {/* Save Button */}
           <button className="w-full h-14 bg-primary text-on-primary rounded-xl font-label-lg shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform">
             <span className="material-symbols-outlined">save</span>
             Simpan Pengaturan

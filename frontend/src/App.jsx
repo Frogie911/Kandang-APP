@@ -7,6 +7,7 @@ import Riwayat from "./pages/Riwayat";
 import Profil from "./pages/Profil";
 
 // Admin pages
+import RiwayatAktivitasUser from "./admin/RiwayatAktivitasUser";
 import AdminDashboard from "./admin/AdminDashboard";
 import ManajemenBatch from "./admin/ManajemenBatch";
 import ManajemenPengguna from "./admin/ManajemenPengguna";
@@ -142,6 +143,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <DetailLantai />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/pengguna/:userId/riwayat"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <RiwayatAktivitasUser />
             </ProtectedRoute>
           }
         />

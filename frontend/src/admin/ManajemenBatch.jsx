@@ -18,11 +18,12 @@ export default function ManajemenBatch() {
     catatan: "",
   });
 
-  // State untuk form Catat Hasil Panen
+  // State untuk form Catat Hasil Panen (MULTI-PANEN)
   const [harvestData, setHarvestData] = useState({
     tanggal: "",
-    totalBerat: "",
-    hargaJual: "",
+    beratPerEkor: "", // ← GANTI: dari totalBerat
+    panenKe: "1", // ← BARU: pilihan panen ke-berapa
+    jumlahAyamPanen: "", // ← BARU: berapa ekor yang dipanen
     catatan: "",
   });
 
@@ -41,17 +42,6 @@ export default function ManajemenBatch() {
     }));
   };
 
-  const rightAction = (
-    <button
-      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-90 transition-all"
-      onClick={toggleModal}
-    >
-      <span className="material-symbols-outlined text-on-primary-container">
-        add
-      </span>
-    </button>
-  );
-
   const batches = [
     {
       id: 3,
@@ -64,6 +54,9 @@ export default function ManajemenBatch() {
       mati: 127,
       umur: "Hari 21",
       isActive: true,
+      sisaAyam: 14873,
+      totalPanen: 0,
+      panenCount: 0,
     },
     {
       id: 2,
@@ -93,17 +86,53 @@ export default function ManajemenBatch() {
     },
   ];
 
-  // Ringkasan otomatis untuk panen (mock data)
-  const harvestSummary = {
-    durasi: "35 hari",
-    populasiAwal: "15,000 ekor",
-    totalKematian: "127 ekor (0.85%)",
-    fcrFinal: "1.82",
-    estimasiRevenue: "Rp 297.000.000",
+  // Ringkasan dinamis berdasarkan input panen
+  const getHarvestSummary = () => {
+    const beratPerEkor = parseFloat(harvestData.beratPerEkor) || 0;
+    const jumlahPanen = parseInt(harvestData.jumlahAyamPanen) || 0;
+    const panenKe = parseInt(harvestData.panenKe) || 1;
+    const batch = selectedBatch || batches[0];
+
+    const totalBerat = beratPerEkor * jumlahPanen;
+    const sisaAyam = batch.sisaAyam - jumlahPanen;
+    const estimasiRevenue = totalBerat * 22000; // Rp 22.000/kg (mock)
+    const bisaPanenLagi = sisaAyam > 500; // threshold 500 ekor
+
+    return {
+      durasi: batch.umur || "35 hari",
+      populasiAwal: batch.ekor?.toLocaleString("id-ID") + " ekor",
+      totalKematian:
+        batch.mati +
+        " ekor (" +
+        ((batch.mati / batch.ekor) * 100).toFixed(2) +
+        "%)",
+      fcrFinal: batch.fcr,
+      panenKe: panenKe,
+      beratPerEkor: beratPerEkor > 0 ? beratPerEkor + " kg" : "-",
+      jumlahPanen:
+        jumlahPanen > 0 ? jumlahPanen.toLocaleString("id-ID") + " ekor" : "-",
+      totalBerat:
+        totalBerat > 0 ? totalBerat.toLocaleString("id-ID") + " kg" : "-",
+      sisaAyam:
+        sisaAyam > 0 ? sisaAyam.toLocaleString("id-ID") + " ekor" : "0 ekor",
+      estimasiRevenue:
+        estimasiRevenue > 0
+          ? "Rp " + estimasiRevenue.toLocaleString("id-ID")
+          : "-",
+      bisaPanenLagi,
+      statusPanen:
+        panenKe === 1
+          ? "Panen Pertama"
+          : panenKe === 2
+            ? "Panen Kedua"
+            : "Panen Ketiga",
+    };
   };
 
+  const harvestSummary = getHarvestSummary();
+
   return (
-    <AdminLayout title="Manajemen Batch" showBack rightAction={rightAction}>
+    <AdminLayout title="Manajemen Batch" showBack>
       <div className="space-y-6">
         {/* ============================== */}
         {/* SECTION 1: ACTIVE BATCH BANNER */}
@@ -149,7 +178,7 @@ export default function ManajemenBatch() {
                 </p>
               </div>
               <div className="bg-primary/20 backdrop-blur-sm p-2 rounded-lg flex flex-col items-center justify-center border border-on-primary-container/10">
-                <p className="font-label-md text-[10px] text-on-tertiary-container/70 uppercase">
+                <p className="font-label-md text-[10px] text-on-primary-container/70 uppercase">
                   Mati
                 </p>
                 <p className="font-label-lg text-label-lg text-on-tertiary-container">
@@ -195,7 +224,7 @@ export default function ManajemenBatch() {
                 Catat Panen
               </p>
               <p className="font-label-md text-label-md text-on-surface-variant">
-                Tutup batch aktif
+                Input hasil panen
               </p>
             </div>
           </button>
@@ -232,7 +261,7 @@ export default function ManajemenBatch() {
         </section>
 
         {/* ============================== */}
-        {/* SECTION 4: BATCH LIST            */}
+        {/* SECTION 4: BATCH LIST          */}
         {/* ============================== */}
         <section className="flex flex-col gap-4">
           <h3 className="font-label-lg text-label-lg text-outline uppercase tracking-wider">
@@ -242,9 +271,7 @@ export default function ManajemenBatch() {
             {batches.map((batch) => (
               <div
                 key={batch.id}
-                className={`bg-surface-container-lowest p-4 rounded-xl border border-outline-variant flex flex-col gap-3 cursor-pointer active:bg-surface-container-low transition-colors ${
-                  !batch.isActive ? "opacity-90" : ""
-                }`}
+                className={`bg-surface-container-lowest p-4 rounded-xl border border-outline-variant flex flex-col gap-3 cursor-pointer active:bg-surface-container-low transition-colors ${!batch.isActive ? "opacity-90" : ""}`}
               >
                 <div className="flex justify-between items-center">
                   <h4 className="font-headline-sm text-headline-sm text-on-surface">
@@ -318,7 +345,7 @@ export default function ManajemenBatch() {
       </div>
 
       {/* ============================== */}
-      {/* FLOATING ACTION BUTTON           */}
+      {/* FLOATING ACTION BUTTON         */}
       {/* ============================== */}
       <button
         className="fixed bottom-24 right-margin-mobile w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-all z-40"
@@ -328,22 +355,16 @@ export default function ManajemenBatch() {
       </button>
 
       {/* ============================== */}
-      {/* MODAL: BUKA BATCH BARU           */}
+      {/* MODAL: BUKA BATCH BARU         */}
       {/* ============================== */}
-      <div
-        className={`fixed inset-0 z-[60] flex-col justify-end transition-opacity duration-300 ${
-          modalOpen ? "flex opacity-100" : "hidden opacity-0"
-        }`}
-      >
+      <div className={`fixed inset-0 z-[60] ${modalOpen ? "flex" : "hidden"}`}>
         <div className="absolute inset-0 bg-black/40" onClick={toggleModal} />
-        <div className="relative bg-surface-container-lowest w-full rounded-t-3xl p-6 flex flex-col gap-6 animate-[slide-up_0.3s_ease-out] max-h-[90vh] overflow-y-auto">
-          {/* Handle */}
+        <div className="absolute bottom-0 left-0 right-0 bg-surface-container-lowest rounded-t-3xl p-6 flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
           <div
             className="w-12 h-1.5 bg-outline-variant rounded-full mx-auto cursor-pointer"
             onClick={toggleModal}
           />
 
-          {/* Header */}
           <div className="flex justify-between items-center">
             <div>
               <h3 className="font-headline-sm text-headline-sm text-on-surface">
@@ -363,12 +384,10 @@ export default function ManajemenBatch() {
             </button>
           </div>
 
-          {/* Form */}
           <form
             className="flex flex-col gap-5"
             onSubmit={(e) => e.preventDefault()}
           >
-            {/* Tanggal Masuk DOC */}
             <div className="flex flex-col gap-2">
               <label className="font-label-lg text-label-lg text-on-surface">
                 Tanggal Masuk DOC
@@ -388,7 +407,6 @@ export default function ManajemenBatch() {
               </div>
             </div>
 
-            {/* Jumlah DOC */}
             <div className="flex flex-col gap-2">
               <label className="font-label-lg text-label-lg text-on-surface">
                 Jumlah DOC (ekor)
@@ -412,7 +430,6 @@ export default function ManajemenBatch() {
               </div>
             </div>
 
-            {/* Lantai Kandang */}
             <div className="flex flex-col gap-2">
               <div className="flex flex-col">
                 <label className="font-label-lg text-label-lg text-on-surface">
@@ -440,7 +457,6 @@ export default function ManajemenBatch() {
               </div>
             </div>
 
-            {/* Supplier DOC */}
             <div className="flex flex-col gap-2">
               <label className="font-label-lg text-label-lg text-on-surface">
                 Supplier DOC
@@ -466,7 +482,6 @@ export default function ManajemenBatch() {
               </div>
             </div>
 
-            {/* Harga DOC */}
             <div className="flex flex-col gap-2">
               <label className="font-label-lg text-label-lg text-on-surface">
                 Harga DOC per Ekor (Opsional)
@@ -487,7 +502,6 @@ export default function ManajemenBatch() {
               </div>
             </div>
 
-            {/* Target FCR */}
             <div className="flex flex-col gap-2">
               <div className="flex flex-col">
                 <label className="font-label-lg text-label-lg text-on-surface">
@@ -513,7 +527,6 @@ export default function ManajemenBatch() {
               </div>
             </div>
 
-            {/* Catatan */}
             <div className="flex flex-col gap-2">
               <label className="font-label-lg text-label-lg text-on-surface">
                 Catatan Batch
@@ -528,7 +541,6 @@ export default function ManajemenBatch() {
               />
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               className="w-full h-14 bg-primary text-on-primary rounded-xl flex items-center justify-center gap-3 shadow-md hover:opacity-90 active:scale-95 transition-all mt-2"
@@ -541,25 +553,21 @@ export default function ManajemenBatch() {
       </div>
 
       {/* ============================== */}
-      {/* MODAL: CATAT HASIL PANEN         */}
+      {/* MODAL: CATAT HASIL PANEN       */}
       {/* ============================== */}
       <div
-        className={`fixed inset-0 z-[60] flex-col justify-end transition-opacity duration-300 ${
-          harvestModalOpen ? "flex opacity-100" : "hidden opacity-0"
-        }`}
+        className={`fixed inset-0 z-[60] ${harvestModalOpen ? "flex" : "hidden"}`}
       >
         <div
           className="absolute inset-0 bg-black/40"
           onClick={() => toggleHarvestModal()}
         />
-        <div className="relative bg-surface-container-lowest w-full rounded-t-3xl p-6 flex flex-col gap-6 animate-[slide-up_0.3s_ease-out] max-h-[90vh] overflow-y-auto">
-          {/* Handle */}
+        <div className="absolute bottom-0 left-0 right-0 bg-surface-container-lowest rounded-t-3xl p-6 flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
           <div
             className="w-12 h-1.5 bg-outline-variant rounded-full mx-auto cursor-pointer"
             onClick={() => toggleHarvestModal()}
           />
 
-          {/* Header */}
           <div className="flex justify-between items-center">
             <h3 className="font-headline-sm text-headline-sm text-on-surface">
               Catat Hasil Panen
@@ -580,13 +588,14 @@ export default function ManajemenBatch() {
               warning
             </span>
             <p className="font-label-md text-on-error-container">
-              Tindakan ini tidak bisa dibatalkan. Batch #3 akan ditutup secara
-              permanen.
+              Pastikan data panen sudah benar. Batch masih bisa dipanen lagi
+              jika sisa ayam masih cukup.
             </p>
           </div>
 
           {/* Form */}
           <div className="flex flex-col gap-4">
+            {/* Tanggal Panen */}
             <div className="flex flex-col gap-2">
               <label className="font-label-lg text-label-lg text-on-surface-variant">
                 Tanggal Panen
@@ -600,50 +609,90 @@ export default function ManajemenBatch() {
                 className="h-12 px-4 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
               />
             </div>
+
+            {/* Panen Ke-berapa */}
             <div className="flex flex-col gap-2">
               <label className="font-label-lg text-label-lg text-on-surface-variant">
-                Total Berat Panen
+                Panen Ke-
               </label>
               <div className="relative">
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
+                  format_list_numbered
+                </span>
+                <select
+                  value={harvestData.panenKe}
+                  onChange={(e) =>
+                    setHarvestData({ ...harvestData, panenKe: e.target.value })
+                  }
+                  className="w-full h-12 pl-12 pr-10 bg-white border border-outline-variant rounded-lg appearance-none focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                >
+                  <option value="1">Panen Pertama</option>
+                  <option value="2">Panen Kedua</option>
+                  <option value="3">Panen Ketiga</option>
+                  <option value="4">Panen Keempat</option>
+                  <option value="5">Panen Kelima</option>
+                </select>
+                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">
+                  expand_more
+                </span>
+              </div>
+            </div>
+
+            {/* Jumlah Ayam Dipanen */}
+            <div className="flex flex-col gap-2">
+              <label className="font-label-lg text-label-lg text-on-surface-variant">
+                Jumlah Ayam Dipanen
+              </label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
+                  pets
+                </span>
                 <input
                   type="number"
-                  placeholder="0"
-                  value={harvestData.totalBerat}
+                  placeholder="Contoh: 5000"
+                  value={harvestData.jumlahAyamPanen}
                   onChange={(e) =>
                     setHarvestData({
                       ...harvestData,
-                      totalBerat: e.target.value,
+                      jumlahAyamPanen: e.target.value,
                     })
                   }
-                  className="w-full h-12 px-4 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                  className="w-full h-12 pl-12 pr-16 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 font-label-lg text-outline">
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 font-label-md text-on-surface-variant">
+                  ekor
+                </span>
+              </div>
+            </div>
+
+            {/* Berat per Ekor */}
+            <div className="flex flex-col gap-2">
+              <label className="font-label-lg text-label-lg text-on-surface-variant">
+                Berat per Ekor
+              </label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
+                  scale
+                </span>
+                <input
+                  type="number"
+                  placeholder="Contoh: 2.1"
+                  value={harvestData.beratPerEkor}
+                  onChange={(e) =>
+                    setHarvestData({
+                      ...harvestData,
+                      beratPerEkor: e.target.value,
+                    })
+                  }
+                  className="w-full h-12 pl-12 pr-16 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 font-label-md text-on-surface-variant">
                   kg
                 </span>
               </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <label className="font-label-lg text-label-lg text-on-surface-variant">
-                Harga Jual per Kg
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-label-lg text-outline">
-                  Rp
-                </span>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={harvestData.hargaJual}
-                  onChange={(e) =>
-                    setHarvestData({
-                      ...harvestData,
-                      hargaJual: e.target.value,
-                    })
-                  }
-                  className="w-full h-12 pl-12 pr-4 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                />
-              </div>
-            </div>
+
+            {/* Catatan */}
             <div className="flex flex-col gap-2">
               <label className="font-label-lg text-label-lg text-on-surface-variant">
                 Catatan (Opsional)
@@ -662,8 +711,17 @@ export default function ManajemenBatch() {
           {/* Summary Preview */}
           <div className="bg-surface-container-low rounded-xl p-4 space-y-3">
             <h4 className="font-label-lg tracking-wider text-on-surface-variant uppercase">
-              Ringkasan Otomatis
+              Ringkasan Panen
             </h4>
+
+            <div className="flex justify-between items-center">
+              <span className="font-label-md text-on-surface-variant">
+                Status
+              </span>
+              <span className="font-label-lg text-primary font-bold">
+                {harvestSummary.statusPanen}
+              </span>
+            </div>
             <div className="flex justify-between items-center">
               <span className="font-label-md text-on-surface-variant">
                 Durasi Batch
@@ -688,20 +746,42 @@ export default function ManajemenBatch() {
                 {harvestSummary.totalKematian}
               </span>
             </div>
+            <hr className="border-outline-variant/30" />
             <div className="flex justify-between items-center">
               <span className="font-label-md text-on-surface-variant">
-                FCR Final
+                Berat per Ekor
               </span>
-              <div className="flex items-center gap-2">
-                <span className="font-label-lg text-primary">
-                  {harvestSummary.fcrFinal}
-                </span>
-                <span className="bg-primary-fixed text-on-primary-fixed text-[10px] px-2 py-0.5 rounded font-bold uppercase">
-                  BAIK
-                </span>
-              </div>
+              <span className="font-label-lg text-on-surface">
+                {harvestSummary.beratPerEkor}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="font-label-md text-on-surface-variant">
+                Jumlah Dipanen
+              </span>
+              <span className="font-label-lg text-on-surface">
+                {harvestSummary.jumlahPanen}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="font-label-md text-on-surface-variant">
+                Total Berat
+              </span>
+              <span className="font-label-lg text-on-surface font-bold">
+                {harvestSummary.totalBerat}
+              </span>
             </div>
             <hr className="border-outline-variant/30" />
+            <div className="flex justify-between items-center">
+              <span className="font-label-md text-on-surface-variant">
+                Sisa Ayam
+              </span>
+              <span
+                className={`font-label-lg ${harvestSummary.bisaPanenLagi ? "text-primary" : "text-error"}`}
+              >
+                {harvestSummary.sisaAyam}
+              </span>
+            </div>
             <div className="flex justify-between items-center pt-1">
               <span className="font-label-lg text-on-surface">
                 Estimasi Revenue
@@ -712,12 +792,35 @@ export default function ManajemenBatch() {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-col gap-4">
+          {/* Actions — DIPISAH: Simpan vs Tutup */}
+          <div className="flex flex-col gap-3">
             <button className="w-full h-14 bg-primary text-on-primary rounded-xl font-label-lg shadow-md flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
-              <span className="material-symbols-outlined">check_circle</span>
-              Konfirmasi & Tutup Batch
+              <span className="material-symbols-outlined">save</span>
+              Simpan Panen
             </button>
+
+            {harvestSummary.bisaPanenLagi && (
+              <p className="text-center font-label-md text-on-surface-variant">
+                Sisa ayam masih {harvestSummary.sisaAyam}. Bisa panen lagi
+                nanti.
+              </p>
+            )}
+
+            <button
+              className={`w-full h-14 rounded-xl font-label-lg shadow-md flex items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
+                harvestSummary.bisaPanenLagi
+                  ? "bg-surface-container-high text-outline border border-outline-variant"
+                  : "bg-error text-on-error"
+              }`}
+            >
+              <span className="material-symbols-outlined">
+                {harvestSummary.bisaPanenLagi ? "lock" : "check_circle"}
+              </span>
+              {harvestSummary.bisaPanenLagi
+                ? "Tutup Batch (Final)"
+                : "Konfirmasi & Tutup Batch"}
+            </button>
+
             <button
               onClick={() => toggleHarvestModal()}
               className="text-center underline text-outline font-label-lg"
