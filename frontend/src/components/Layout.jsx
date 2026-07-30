@@ -1,7 +1,7 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 
-const API_URL = "https://kandang-app-production.up.railway.app";
+const API_URL = import.meta.env.VITE_API_URL;
 
 function Layout({ children, title, hideFab = false, hideNav = false }) {
   const navigate = useNavigate();
