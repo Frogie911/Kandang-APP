@@ -49,10 +49,10 @@ export default function ManajemenBatch() {
     try {
       // Alamat `${API}` diganti langsung ke alamat backend port 3000
       const [allRes, activeRes] = await Promise.all([
-        fetch("http://localhost:3000/api/admin/batches/active", {
+        fetch(`${import.meta.env.VITE_API_URL}/api/admin/batches`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("http://localhost:3000/api/admin/batches/active", {
+        fetch(`${import.meta.env.VITE_API_URL}/api/admin/batches/active`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
