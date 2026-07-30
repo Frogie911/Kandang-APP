@@ -6,6 +6,10 @@ import jwt from "jsonwebtoken";
 import authRouter from "./auth.js";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
+import batchRouter from "./routes/batch.js";
+import usersRouter from "./routes/users.js";
+import dashboardRouter from "./routes/dashboard.js";
+import reportsRouter from "./routes/reports.js";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -27,12 +31,10 @@ const upload = multer({
   },
 });
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use("/auth", authRouter);
+// ==============================
+// MIDDLEWARE
+// ==============================
 
-// Auth Middleware
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -44,6 +46,48 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
+
+function requireAdmin(req, res, next) {
+  if (req.user && req.user.role === "admin") {
+    next();
+  } else {
+    res.status(403).json({ error: "Akses ditolak. Anda bukan admin." });
+  }
+}
+
+// ==============================
+// ROUTES
+// ==============================
+
+app.use(cors());
+app.use(express.json());
+app.use("/auth", authRouter);
+app.use("/api/admin/batches", authenticateToken, batchRouter);
+app.use("/api/admin/users", authenticateToken, requireAdmin, usersRouter);
+app.use(
+  "/api/admin/dashboard",
+  authenticateToken,
+  requireAdmin,
+  dashboardRouter,
+);
+app.use("/api/admin/reports", authenticateToken, requireAdmin, reportsRouter);
+
+// ==============================
+// HELPER: ambil batch aktif & floorId user sekaligus
+// ==============================
+const getActiveBatchAndFloor = async (userId) => {
+  const [activeBatch, currentUser] = await Promise.all([
+    prisma.batch.findFirst({ where: { status: "aktif" } }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { floorId: true },
+    }),
+  ]);
+  return {
+    batchId: activeBatch?.id || null,
+    floorId: currentUser?.floorId || null,
+  };
+};
 
 // ==============================
 // API RECORDS
@@ -61,7 +105,7 @@ app.get("/api/records", authenticateToken, async (req, res) => {
   }
 });
 
-// POST record umum (pakan, stok)
+// POST record umum (pakan, stok masuk, dll)
 app.post("/api/records", authenticateToken, async (req, res) => {
   try {
     const {
@@ -74,7 +118,11 @@ app.post("/api/records", authenticateToken, async (req, res) => {
       supplier,
       tanggal,
     } = req.body;
+
     const recordedBy = req.user.username || req.user.id.toString();
+
+    // Otomatis attach batch aktif & lantai user
+    const { batchId, floorId } = await getActiveBatchAndFloor(req.user.id);
 
     const record = await prisma.record.create({
       data: {
@@ -88,8 +136,11 @@ app.post("/api/records", authenticateToken, async (req, res) => {
         tanggal: tanggal ? new Date(tanggal) : null,
         recordedBy,
         userId: req.user.id,
+        batchId,
+        floorId,
       },
     });
+
     res.status(201).json({ message: "Data tersimpan", record });
   } catch (err) {
     console.error("POST /api/records error:", err);
@@ -97,7 +148,7 @@ app.post("/api/records", authenticateToken, async (req, res) => {
   }
 });
 
-// POST kematian dengan foto (ROBUST: kalau Cloudinary gagal, tetap simpan data)
+// POST kematian dengan foto
 app.post(
   "/api/records/kematian",
   authenticateToken,
@@ -107,7 +158,7 @@ app.post(
       const { jumlah, penyebab, keterangan } = req.body;
       let photoUrl = null;
 
-      // Upload ke Cloudinary dengan try-catch
+      // Upload ke Cloudinary
       if (req.file) {
         try {
           const uploadResult = await new Promise((resolve, reject) => {
@@ -124,7 +175,6 @@ app.post(
           photoUrl = uploadResult.secure_url;
           console.log("✅ Foto terupload:", photoUrl);
         } catch (cloudErr) {
-          // Kalau Cloudinary gagal (secret salah), jangan crash. Simpan data tanpa foto.
           console.error(
             "⚠️ Cloudinary gagal (cek API_SECRET di Railway):",
             cloudErr.message,
@@ -135,6 +185,9 @@ app.post(
 
       const recordedBy = req.user.username || req.user.id.toString();
 
+      // Otomatis attach batch aktif & lantai user
+      const { batchId, floorId } = await getActiveBatchAndFloor(req.user.id);
+
       const record = await prisma.record.create({
         data: {
           type: "kematian",
@@ -144,6 +197,8 @@ app.post(
           photoUrl,
           recordedBy,
           userId: req.user.id,
+          batchId,
+          floorId,
         },
       });
 
@@ -160,36 +215,59 @@ app.post(
   },
 );
 
-// GET dashboard
+// GET dashboard worker
 app.get("/api/dashboard", authenticateToken, async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [todayRecords, weekRecords, totalAyam, totalPakan] =
+    // Ambil batch aktif untuk data yang lebih akurat
+    const activeBatch = await prisma.batch.findFirst({
+      where: { status: "aktif" },
+    });
+
+    const [todayRecords, weekRecords, totalKematian, totalPakan] =
       await Promise.all([
-        prisma.record.count({ where: { createdAt: { gte: today } } }),
+        prisma.record.count({
+          where: { createdAt: { gte: today } },
+        }),
         prisma.record.count({
           where: {
             createdAt: { gte: new Date(today - 7 * 24 * 60 * 60 * 1000) },
           },
         }),
         prisma.record.aggregate({
-          where: { type: "populasi" },
+          where: {
+            type: "kematian",
+            ...(activeBatch && { batchId: activeBatch.id }),
+          },
           _sum: { jumlah: true },
         }),
         prisma.record.aggregate({
-          where: { type: "berikan_pakan" },
+          where: {
+            type: "berikan_pakan",
+            ...(activeBatch && { batchId: activeBatch.id }),
+          },
           _sum: { jumlah: true },
         }),
       ]);
 
+    const totalMati = totalKematian._sum.jumlah || 0;
+    const ayamHidup = activeBatch ? activeBatch.jumlahDoc - totalMati : 0;
+
     res.json({
-      ayamHidup: totalAyam._sum.jumlah || 1482,
-      stokPakan: 120,
-      kematianHariIni: 0,
+      ayamHidup,
+      stokPakan: totalPakan._sum.jumlah || 0,
+      kematianHariIni: totalMati,
       todayRecords,
       weekRecords,
+      activeBatch: activeBatch
+        ? {
+            id: activeBatch.id,
+            nomorBatch: activeBatch.nomorBatch,
+            tanggalMulai: activeBatch.tanggalMulai,
+          }
+        : null,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

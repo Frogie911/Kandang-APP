@@ -9,25 +9,59 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  name      String?               // ← BARU: nama lengkap
   password  String
-  role      String   @default("worker") // "admin" atau "worker"
+  role      String    @default("worker")
+  floorId   Int?                  // ← BARU: lantai penugasan
+  floor     Floor?    @relation(fields: [floorId], references: [id])
+  records   Record[]
+  createdAt DateTime  @default(now())
+}
+
+model Floor {
+  id        Int      @id @default(autoincrement())
+  nama      String   // "Lantai 1", "Lantai 2", dst
+  kandang   String?  // "Kandang A", dst
+  users     User[]
   records   Record[]
   createdAt DateTime @default(now())
 }
 
-model Ayam {
-  id        Int      @id @default(autoincrement())
-  jumlah    Int
-  mati      Int
-  pakan     Float
-  createdAt DateTime @default(now())
+model Batch {
+  id             Int       @id @default(autoincrement())
+  nomorBatch     Int       @unique
+  tanggalMulai   DateTime
+  tanggalSelesai DateTime?
+  jumlahDoc      Int
+  supplier       String?
+  hargaDoc       Float?
+  targetFcr      Float?
+  status         String    @default("aktif") // "aktif" | "selesai" | "dibatalkan"
+  catatan        String?
+  records        Record[]
+  harvests       Harvest[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Harvest {
+  id             Int      @id @default(autoincrement())
+  batchId        Int
+  batch          Batch    @relation(fields: [batchId], references: [id])
+  tanggalPanen   DateTime
+  panenKe        Int
+  jumlahAyam     Int
+  beratPerEkor   Float
+  totalBerat     Float
+  catatan        String?
+  createdAt      DateTime @default(now())
 }
 
 model Record {
   id          String   @id @default(uuid())
-  type        String   // berikan_pakan, kematian, pakan_masuk, populasi, suhu
+  type        String
   jumlah      Float?
   jenis       String?
   waktu       String?
@@ -39,6 +73,10 @@ model Record {
   recordedBy  String
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
+  batchId     Int?              // ← BARU
+  batch       Batch?   @relation(fields: [batchId], references: [id])
+  floorId     Int?              // ← BARU
+  floor       Floor?   @relation(fields: [floorId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
